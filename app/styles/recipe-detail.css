@@ -1,0 +1,23 @@
+@layer components {
+  .recipe-section-title {
+    @apply text-2xl font-bold text-orange-600 mb-4 flex items-center gap-2;
+  }
+
+  .recipe-card {
+    @apply bg-white shadow-lg rounded-lg overflow-hidden border border-orange-100;
+  }
+
+  .recipe-card-header {
+    @apply bg-orange-50 p-4 border-b border-orange-100;
+  }
+
+  .recipe-list-item {
+    @apply flex items-start gap-3 py-2;
+  }
+
+  .recipe-list-item::before {
+    content: "•";
+    @apply text-orange-500 font-bold;
+  }
+}
+
