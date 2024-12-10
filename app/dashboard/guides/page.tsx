@@ -3,6 +3,7 @@ import { columns } from './columns'
 import { prisma } from '@/lib/db'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { Image as ImageIcon } from 'lucide-react'
 
 export default async function GuidesPage() {
   const guides = await prisma.guide.findMany({

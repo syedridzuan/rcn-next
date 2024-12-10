@@ -6,6 +6,9 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { LoadingPage } from '@/components/loading'
 import { prisma } from '@/lib/db'
 import { notFound } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Image as ImageIcon } from 'lucide-react'
+import Link from 'next/link'
 
 interface EditGuidePageProps {
   params: { guideId: string }
@@ -57,7 +60,14 @@ export default async function EditGuidePage({ params }: EditGuidePageProps) {
       <DashboardHeader
         heading="Edit Guide"
         text="Make changes to your guide content"
-      />
+      >
+        <Link href={`/dashboard/guides/${params.guideId}/images`}>
+          <Button variant="outline" size="sm">
+            <ImageIcon className="h-4 w-4 mr-2" />
+            Manage Images
+          </Button>
+        </Link>
+      </DashboardHeader>
       <div className="grid gap-8">
         <Suspense fallback={<LoadingPage />}>
           <EditGuideForm guide={guide} />
