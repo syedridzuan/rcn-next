@@ -5,21 +5,27 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat("en-US", {
+export function formatDate(dateString: string | Date | null): string {
+  if (!dateString) return '-';
+  
+  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+  
+  if (isNaN(date.getTime())) return '-';
+
+  return new Intl.DateTimeFormat('en-US', {
     month: "long",
     day: "numeric",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(date);
-};
+}
 
 export const slugify = (str: string) => {
   return str
     .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
 };
 
 export const calculateReadTime = (content: string) => {

@@ -4,22 +4,24 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "sqlite" // or another provider
   url      = env("DATABASE_URL")
 }
 
-// User model with role-based access
+// Existing models
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  password      String?
-  image         String?
-  role          String    @default("USER") // Changed from enum to string
-  recipes       Recipe[]
-  comments      Comment[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id         String         @id @default(cuid())
+  name       String?
+  email      String         @unique
+  password   String?
+  image      String?
+  role       String         @default("USER")
+  recipes    Recipe[]
+  comments   Comment[]
+  guides     Guide[]
+  gComments  GuideComment[]
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
 }
 
 // Category model for recipe organization
@@ -34,7 +36,7 @@ model Category {
   updatedAt   DateTime  @updatedAt
 }
 
-// Main Recipe model
+// Recipe model with tag relation
 model Recipe {
   id            String          @id @default(cuid())
   title         String
@@ -53,23 +55,23 @@ model Recipe {
   images        RecipeImage[]
   comments      Comment[]
   tips          RecipeTip[]
+  tags          Tag[]           @relation("RecipesOnTags") // many-to-many with Tag
+  isEditorsPick Boolean  @default(false)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 }
 
-// Recipe Section model for nested ingredients and instructions
 model RecipeSection {
-  id        String       @id @default(cuid())
+  id        String        @id @default(cuid())
   title     String
-  type      String      // "INGREDIENTS" | "INSTRUCTIONS" | "TIPS"
+  type      String         // "INGREDIENTS" | "INSTRUCTIONS" | "TIPS"
   recipeId  String
-  recipe    Recipe      @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipe    Recipe         @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   items     RecipeItem[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 }
 
-// Recipe Item model for individual ingredients or instruction steps
 model RecipeItem {
   id            String        @id @default(cuid())
   content       String
@@ -79,7 +81,6 @@ model RecipeItem {
   updatedAt     DateTime      @updatedAt
 }
 
-// Comment model for recipe discussions
 model Comment {
   id        String   @id @default(cuid())
   content   String
@@ -91,7 +92,6 @@ model Comment {
   updatedAt DateTime @updatedAt
 }
 
-// New RecipeTip model
 model RecipeTip {
   id        String   @id @default(cuid())
   content   String
@@ -101,7 +101,6 @@ model RecipeTip {
   updatedAt DateTime @updatedAt
 }
 
-// Recipe Image model for multiple recipe images
 model RecipeImage {
   id           String   @id @default(cuid())
   url          String
@@ -114,4 +113,73 @@ model RecipeImage {
   recipe       Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// Guide Models
+model Guide {
+  id          String         @id @default(cuid())
+  title       String
+  slug        String         @unique
+  content     String?
+  tags        Tag[]          @relation("GuidesOnTags") // many-to-many with Tag
+  authorId    String?
+  author      User?          @relation(fields: [authorId], references: [id])
+  sections    GuideSection[]
+  images      GuideImage[]
+  comments    GuideComment[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model GuideSection {
+  id        String      @id @default(cuid())
+  title     String
+  content   String
+  guideId   String
+  guide     Guide       @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model GuideImage {
+  id           String   @id @default(cuid())
+  url          String
+  alt          String?
+  description  String?
+  isPrimary    Boolean  @default(false)
+  guideId      String
+  guide        Guide    @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model GuideComment {
+  id        String   @id @default(cuid())
+  content   String
+  guideId   String
+  guide     Guide    @relation(fields: [guideId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Tag model for categorizing recipes and guides
+model Tag {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  guides    Guide[]   @relation("GuidesOnTags")
+  recipes   Recipe[]  @relation("RecipesOnTags")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Subscriber {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  isVerified        Boolean   @default(false)
+  verificationToken String?
+  verifiedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
