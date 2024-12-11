@@ -38,6 +38,11 @@ next-env.d.ts
 
 
 # Ignore specific images
-public/images/recipes/*.jpg
-public/uploads/categories/*.jpg
-public/uploads/guides/*.jpg
+# Ignore all images in the public folder
+public/**/*.jpg
+public/**/*.jpeg
+public/**/*.png
+public/**/*.gif
+public/**/*.bmp
+public/**/*.svg
+public/**/*.webp
