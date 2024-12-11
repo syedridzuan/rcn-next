@@ -14,6 +14,8 @@ import { RecipeSections } from '@/components/RecipeSections'
 import { RecipeTips } from "@/components/RecipeTips"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { use } from 'react'
+import { SaveRecipeButton } from "./SaveRecipeButton"
+import { auth } from "@/auth"
 
 interface PageProps {
   params: Promise<{
@@ -22,6 +24,8 @@ interface PageProps {
 }
 
 async function getRecipe(slug: string) {
+  const session = await auth()
+  
   const recipe = await prisma.recipe.findUnique({
     where: {
       slug,
@@ -62,6 +66,12 @@ async function getRecipe(slug: string) {
         },
       },
       images: true,
+      savedBy: session?.user?.id ? {
+        where: {
+          userId: session.user.id
+        },
+        take: 1,
+      } : false,
     },
   })
 
@@ -240,6 +250,10 @@ export default async function ResepePage({ params }: PageProps) {
               </div>
 
               <div className="flex gap-2">
+                <SaveRecipeButton 
+                  recipeId={recipe.id}
+                  savedRecipeId={recipe.savedBy?.[0]?.id}
+                />
                 <PrintButton label="Cetak Resepi" />
               </div>
             </div>

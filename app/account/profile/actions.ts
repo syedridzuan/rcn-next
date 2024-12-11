@@ -19,50 +19,42 @@ export async function updateProfile(formData: FormData) {
     const session = await auth()
     
     if (!session?.user?.email) {
-      throw new Error("Not authenticated")
+      return { success: false, error: "Not authenticated" }
     }
 
     // Get form data
     const name = formData.get('name') as string
     const imageFile = formData.get('image') as File
 
-    // Prepare the data object for prisma update
     const updateData: any = {
       name: name || null,
     }
 
-    // Handle image upload if a new file was provided
     if (imageFile && imageFile.size > 0) {
-      // Create uploads directory if it doesn't exist
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'profile')
       try {
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'profile')
         await writeFile(path.join(uploadDir, '.gitkeep'), '')
+        
+        const filename = generateUniqueFilename(imageFile.name)
+        const filePath = path.join(uploadDir, filename)
+        
+        const bytes = await imageFile.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+        
+        await writeFile(filePath, buffer)
+        
+        updateData.image = `/uploads/profile/${filename}`
       } catch (error) {
-        // Directory already exists, continue
+        console.error('Failed to save image:', error)
+        return { success: false, error: 'Failed to save image' }
       }
-
-      // Generate unique filename
-      const filename = generateUniqueFilename(imageFile.name)
-      const filePath = path.join(uploadDir, filename)
-      
-      // Convert File object to Buffer and save it
-      const bytes = await imageFile.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      
-      // Write file to disk
-      await writeFile(filePath, buffer)
-      
-      // Update the image path in the database
-      updateData.image = `/uploads/profile/${filename}`
     }
 
-    // Update user in database
     await prisma.user.update({
       where: { email: session.user.email },
       data: updateData,
     })
 
-    // Revalidate the profile page
     revalidatePath('/account/profile')
     
     return { success: true }

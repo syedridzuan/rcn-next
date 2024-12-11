@@ -23,6 +23,7 @@ model User {
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
   reviews    Review[]
+  savedRecipes SavedRecipe[]
 }
 
 // Category model for recipe organization
@@ -63,6 +64,7 @@ model Recipe {
   reviews       Review[]
   avgRating     Float?
   numReviews    Int       @default(0)
+  savedBy       SavedRecipe[]
 }
 
 model RecipeSection {
@@ -206,5 +208,17 @@ model Review {
   // Constraints
   @@index([userId])
   @@index([recipeId])
+  @@unique([userId, recipeId])
+}
+
+model SavedRecipe {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipeId  String
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([userId, recipeId])
 }

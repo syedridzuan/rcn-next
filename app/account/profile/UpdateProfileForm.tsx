@@ -39,19 +39,22 @@ export function UpdateProfileForm({ user }: { user: User }) {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Create a preview URL for the selected image
       const url = URL.createObjectURL(file)
       setImagePreview(url)
     }
   }
 
   const handleSubmit = async (formData: FormData) => {
-    const result = await updateProfile(formData)
-    
-    if (result.success) {
-      toast.success('Your profile has been updated')
-    } else {
-      toast.error(result.error || 'Failed to update profile')
+    try {
+      const result = await updateProfile(formData)
+      
+      if (result.success) {
+        toast.success('Your profile has been updated')
+      } else {
+        toast.error(result.error || 'Failed to update profile')
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred')
     }
   }
   
