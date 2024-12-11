@@ -3,7 +3,6 @@ import { auth } from "@/auth"
 import { CommentSchema } from "@/types/comments"
 import { createComment, getRecipeComments, CommentError } from "@/services/comments"
 import { getRateLimitMiddleware } from "@/lib/rate-limit"
-import { checkSpamWithReason } from "@/lib/spam-detection"
 
 /**
  * POST /api/comments
@@ -64,7 +63,6 @@ export async function POST(req: Request) {
     // 4. Validate against schema
     const result = CommentSchema.safeParse(body)
     if (!result.success) {
-      // Transform Zod errors into a more user-friendly format
       return NextResponse.json(
         {
           success: false,
@@ -78,24 +76,7 @@ export async function POST(req: Request) {
       )
     }
 
-    // 5. Spam detection
-    const spamCheck = checkSpamWithReason(result.data.content)
-    //console.log("Spam check result:", spamCheck)
-    if (spamCheck.isSpam) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Comment flagged as spam",
-          details: [{
-            path: ["content"],
-            message: spamCheck.reason || "Spam detected"
-          }]
-        },
-        { status: 400 }
-      )
-    }
-
-    // 6. Create comment with spam check
+    // 5. Create comment (spam check happens inside createComment)
     const isAdmin = session.user.role === "ADMIN"
     const { comment, isPending, reason } = await createComment(
       session.user.id, 

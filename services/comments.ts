@@ -49,7 +49,7 @@ export async function createComment(
 
     // Perform spam check (skip for admins)
     const spamCheck = !isAdmin ? checkSpamWithReason(data.content) : { isSpam: false }
-    
+    //console.log("Spam check result:", spamCheck)
     // Log spam details for monitoring
     if (spamCheck.details) {
       console.log("[SPAM_CHECK]", {
@@ -60,16 +60,20 @@ export async function createComment(
       })
     }
 
-    const status = spamCheck.isSpam 
-      ? COMMENT_STATUS.PENDING 
-      : COMMENT_STATUS.APPROVED
+    // Throw error if spam is detected
+    if (spamCheck.isSpam) {
+      throw new CommentError(
+        `Comment flagged as spam: ${spamCheck.reason}`,
+        400
+      )
+    }
 
     const comment = await tx.comment.create({
       data: {
         content: data.content,
         recipeId: data.recipeId,
         userId,
-        status,
+        status: COMMENT_STATUS.APPROVED, // All non-spam comments are approved
       },
       include: {
         user: {
@@ -94,8 +98,8 @@ export async function createComment(
 
     return {
       comment: transformedComment,
-      isPending: status === COMMENT_STATUS.PENDING,
-      reason: spamCheck.reason
+      isPending: false,
+      reason: undefined
     }
   })
 }
