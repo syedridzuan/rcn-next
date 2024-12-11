@@ -3,6 +3,7 @@ import { auth } from "@/auth"
 import { CommentSchema } from "@/types/comments"
 import { createComment, getRecipeComments, CommentError } from "@/services/comments"
 import { getRateLimitMiddleware } from "@/lib/rate-limit"
+import { checkSpamWithReason } from "@/lib/spam-detection"
 
 /**
  * POST /api/comments
@@ -21,6 +22,7 @@ import { getRateLimitMiddleware } from "@/lib/rate-limit"
  */
 export async function POST(req: Request) {
   try {
+    // 1. Authentication check
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -29,9 +31,8 @@ export async function POST(req: Request) {
       )
     }
 
-    // Rate limiting
+    // 2. Rate limiting
     const rateLimit = await getRateLimitMiddleware("comments")
-    
     if (!rateLimit.success) {
       return NextResponse.json(
         { success: false, error: "Too many requests" },
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
       )
     }
 
+    // 3. Parse and validate request body
     let body
     try {
       body = await req.json()
@@ -59,15 +61,16 @@ export async function POST(req: Request) {
       )
     }
 
+    // 4. Validate against schema
     const result = CommentSchema.safeParse(body)
-    
     if (!result.success) {
+      // Transform Zod errors into a more user-friendly format
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid input",
+          error: "Validation failed",
           details: result.error.errors.map(err => ({
-            path: err.path.join('.'),
+            path: err.path,
             message: err.message
           }))
         },
@@ -75,12 +78,39 @@ export async function POST(req: Request) {
       )
     }
 
+    // 5. Spam detection
+    const spamCheck = checkSpamWithReason(result.data.content)
+    //console.log("Spam check result:", spamCheck)
+    if (spamCheck.isSpam) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Comment flagged as spam",
+          details: [{
+            path: ["content"],
+            message: spamCheck.reason || "Spam detected"
+          }]
+        },
+        { status: 400 }
+      )
+    }
+
+    // 6. Create comment with spam check
     const isAdmin = session.user.role === "ADMIN"
-    const comment = await createComment(session.user.id, result.data, isAdmin)
+    const { comment, isPending, reason } = await createComment(
+      session.user.id, 
+      result.data,
+      isAdmin
+    )
     
     return NextResponse.json({ 
       success: true, 
-      data: comment 
+      data: comment,
+      isPending,
+      message: isPending 
+        ? "Your comment is under review and will be visible once approved" 
+        : undefined,
+      reason: isPending ? reason : undefined
     })
   } catch (error) {
     console.error("[COMMENTS_POST]", error)

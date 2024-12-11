@@ -1,14 +1,14 @@
 "use client"
 
 import { useSession } from "next-auth/react"
-import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Comment } from "@/types/comments"
+import { useState } from "react"
+import { toast } from "sonner"
+import { Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Comment } from "@/types/comments"
 import { formatDistanceToNow } from "date-fns"
-import { Trash2 } from "lucide-react"
-import { toast } from "sonner"
 
 interface CommentsWrapperProps {
   recipeId: string
@@ -22,7 +22,6 @@ export function CommentsWrapper({ recipeId, initialComments }: CommentsWrapperPr
   const [content, setContent] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Handle new comment submission
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!content.trim()) return
@@ -41,14 +40,26 @@ export function CommentsWrapper({ recipeId, initialComments }: CommentsWrapperPr
       const data = await res.json()
       if (!data.success) {
         if (data.details) {
-          // Handle validation errors
           const errors = data.details.map((err: any) => err.message).join(", ")
           throw new Error(errors)
         }
         throw new Error(data.error || "Failed to add comment")
       }
 
-      // Add new comment to the list
+      // Show appropriate message for pending comments
+      if (data.isPending) {
+        toast.info(
+          data.message || "Your comment is under review", 
+          {
+            description: data.reason,
+            duration: 5000,
+          }
+        )
+        setContent("")
+        return
+      }
+
+      // Add new comment to the list only if not pending
       setComments((prev) => [data.data, ...prev])
       setContent("")
       toast.success("Comment added successfully")
@@ -59,7 +70,6 @@ export function CommentsWrapper({ recipeId, initialComments }: CommentsWrapperPr
     }
   }
 
-  // Handle comment deletion
   async function handleDelete(commentId: string) {
     try {
       const res = await fetch(`/api/comments/${commentId}`, {
@@ -71,7 +81,6 @@ export function CommentsWrapper({ recipeId, initialComments }: CommentsWrapperPr
         throw new Error(data.error)
       }
 
-      // Remove deleted comment from the list
       setComments((prev) => prev.filter((comment) => comment.id !== commentId))
       toast.success("Comment deleted successfully")
     } catch (error) {
@@ -91,9 +100,10 @@ export function CommentsWrapper({ recipeId, initialComments }: CommentsWrapperPr
             onChange={(e) => setContent(e.target.value)}
             placeholder="Share your thoughts..."
             className="min-h-[100px]"
+            disabled={isSubmitting}
           />
           <Button 
-            type="submit" 
+            type="submit"
             disabled={isSubmitting || !content.trim()}
           >
             {isSubmitting ? "Posting..." : "Post Comment"}

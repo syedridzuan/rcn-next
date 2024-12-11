@@ -89,17 +89,17 @@ model RecipeItem {
 
 model Comment {
   id        String   @id @default(cuid())
-  content   String
-  recipeId  String
-  recipe    Recipe   @relation(fields: [recipeId], references: [id])
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  status    String   @default("APPROVED")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  content   String   // Remove @db.Text since SQLite doesn't support it
+  status    String   @default("PENDING")
+  userId    String
+  recipeId  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
-  @@index([recipeId])
   @@index([userId])
+  @@index([recipeId])
 }
 
 model RecipeTip {
