@@ -70,6 +70,10 @@ async function getRecipe(slug: string) {
         where: {
           userId: session.user.id
         },
+        select: {
+          id: true,
+          notes: true,
+        },
         take: 1,
       } : false,
     },
@@ -253,6 +257,7 @@ export default async function ResepePage({ params }: PageProps) {
                 <SaveRecipeButton 
                   recipeId={recipe.id}
                   savedRecipeId={recipe.savedBy?.[0]?.id}
+                  existingNote={recipe.savedBy?.[0]?.notes}
                 />
                 <PrintButton label="Cetak Resepi" />
               </div>

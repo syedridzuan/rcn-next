@@ -23,6 +23,7 @@ export interface SavedRecipe {
   id: string
   userId: string
   recipeId: string
+  notes: string | null
   recipe: Recipe
   createdAt: Date
   updatedAt: Date

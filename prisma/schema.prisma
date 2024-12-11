@@ -217,6 +217,7 @@ model SavedRecipe {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   recipeId  String
   recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  notes     String?   // New field for user notes
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
