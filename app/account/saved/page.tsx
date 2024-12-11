@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { UnsaveRecipeButton } from "./UnsaveRecipeButton"
 import { Clock, ChefHat, StickyNote, BookmarkIcon } from 'lucide-react'
 import type { SavedRecipe } from "@/types"
+import { EditNoteButton } from "./EditNoteButton"
 
 export default async function SavedRecipesPage() {
   // Get current user session
@@ -107,9 +108,15 @@ export default async function SavedRecipesPage() {
                   </div>
                   {notes && (
                     <div className="mt-2 p-3 bg-muted rounded-md">
-                      <div className="flex items-center gap-2 text-sm font-medium mb-1 text-primary">
-                        <StickyNote className="h-4 w-4" />
-                        Your Notes
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                          <StickyNote className="h-4 w-4" />
+                          Your Notes
+                        </div>
+                        <EditNoteButton 
+                          savedRecipeId={id}
+                          initialNote={notes}
+                        />
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-3">
                         {notes}
@@ -126,6 +133,7 @@ export default async function SavedRecipesPage() {
                   <UnsaveRecipeButton 
                     savedRecipeId={id}
                     className="shrink-0"
+                    recipeName={recipe.title}
                   />
                 </CardFooter>
               </Card>
