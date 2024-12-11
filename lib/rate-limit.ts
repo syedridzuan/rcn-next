@@ -1,47 +1,55 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { Redis } from '@upstash/redis'
+import { Ratelimit } from "@upstash/ratelimit"
+import { Redis } from "@upstash/redis"
+import { headers } from "next/headers"
 
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 })
 
-export async function rateLimit(
-  request: NextRequest,
-  { windowMs = 60000, max = 5 } = {}
-) {
+// Create a new ratelimiter that allows 5 requests per 10 seconds
+const ratelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(
+    Number(process.env.RATE_LIMIT_REQUESTS) || 5,
+    "10 s"
+  ),
+})
+
+export interface RateLimitResponse {
+  success: boolean
+  remaining: number
+  limit: number
+  reset: number
+}
+
+export async function getRateLimitMiddleware(
+  key: string
+): Promise<RateLimitResponse> {
   try {
-    const ip = request.ip ?? '127.0.0.1'
-    const key = `rate-limit:${ip}`
-    
-    const count = await redis.incr(key)
-    
-    if (count === 1) {
-      await redis.pexpire(key, windowMs)
+    // Get headers and await them
+    const headersList = await headers()
+    const forwardedFor = headersList.get("x-forwarded-for")
+    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : "127.0.0.1"
+
+    // Apply rate limiting
+    const { success, limit, remaining, reset } = await ratelimit.limit(
+      `${key}_${ip}`
+    )
+
+    return {
+      success,
+      remaining,
+      limit,
+      reset
     }
-    
-    const ttl = await redis.pttl(key)
-    
-    if (count > max) {
-      return NextResponse.json(
-        {
-          error: 'Too many requests',
-          timeout: ttl,
-        },
-        {
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': max.toString(),
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': (Date.now() + ttl).toString(),
-          },
-        }
-      )
-    }
-    
-    return null
   } catch (error) {
-    console.error('Rate limit error:', error)
-    return null // Continue if rate limiting fails
+    console.error("Rate limit error:", error)
+    return {
+      success: true, // Fail open
+      remaining: 1,
+      limit: 5,
+      reset: Date.now() + 10000
+    }
   }
-} 
+}

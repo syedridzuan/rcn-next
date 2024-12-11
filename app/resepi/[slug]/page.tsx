@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { absoluteUrl, formatDate } from "@/lib/utils"
-import { CommentsWrapper } from "@/components/comments/comments-wrapper"
+
 import { PrintButton } from "@/components/recipes/print-button"
 import { RecipeMetaCards } from "./recipe-meta-cards"
 import { RecipeSections } from '@/components/RecipeSections'
@@ -16,6 +16,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { use } from 'react'
 import { SaveRecipeButton } from "./SaveRecipeButton"
 import { auth } from "@/auth"
+import { Suspense } from "react"
+import { CommentsWrapper } from "@/components/comments/comments-wrapper"
 
 interface PageProps {
   params: Promise<{
@@ -41,6 +43,9 @@ async function getRecipe(slug: string) {
       },
       tips: true,
       comments: {
+        where: {
+          status: "APPROVED"
+        },
         include: {
           user: {
             select: {
@@ -75,7 +80,7 @@ async function getRecipe(slug: string) {
           notes: true,
         },
         take: 1,
-      } : false,
+      } : undefined,
     },
   })
 
@@ -128,6 +133,9 @@ export default async function ResepePage({ params }: PageProps) {
   }
 
   const url = absoluteUrl(`/resepi/${recipe.slug}`)
+  
+  // Get primary image or first image as fallback
+  const primaryImage = recipe.images.find(img => img.isPrimary) || recipe.images[0]
 
   // Structured data for SEO
   const structuredData = {
@@ -135,28 +143,32 @@ export default async function ResepePage({ params }: PageProps) {
     "@type": "Recipe",
     name: recipe.title,
     description: recipe.description,
-    image: recipe.image,
+    image: primaryImage?.url,
     author: {
       "@type": "Person",
-      name: recipe.user.name,
+      name: recipe.user?.name || "Anonymous",
     },
     datePublished: recipe.createdAt.toISOString(),
     prepTime: `PT${recipe.prepTime}M`,
     cookTime: `PT${recipe.cookTime}M`,
     totalTime: `PT${recipe.prepTime + recipe.cookTime}M`,
     recipeYield: `${recipe.servings} hidangan`,
-    recipeCategory: recipe.category.name,
+    recipeCategory: recipe.category?.name,
     recipeCuisine: "Malaysian",
     recipeIngredient: recipe.sections
-      .filter(section => section.type === "INGREDIENTS")
-      .flatMap(section => section.items.map(item => item.content)),
+      ?.filter((section: any) => section.type === "INGREDIENTS")
+      ?.flatMap((section: any) => 
+        section.items.map((item: any) => item.content)
+      ) || [],
     recipeInstructions: recipe.sections
-      .filter(section => section.type === "INSTRUCTIONS")
-      .flatMap(section => section.items.map((item, index) => ({
-        "@type": "HowToStep",
-        position: index + 1,
-        text: item.content,
-      }))),
+      ?.filter((section: any) => section.type === "INSTRUCTIONS")
+      ?.flatMap((section: any) => 
+        section.items.map((item: any, index: number) => ({
+          "@type": "HowToStep",
+          position: index + 1,
+          text: item.content,
+        }))
+      ) || [],
   }
 
   const difficultyTranslations: { [key: string]: string } = {
@@ -164,9 +176,6 @@ export default async function ResepePage({ params }: PageProps) {
     MEDIUM: "Sederhana",
     HARD: "Sukar",
   }
-
-  // Get primary image or first image as fallback
-  const primaryImage = recipe.images.find(img => img.isPrimary) || recipe.images[0]
 
   return (
     <>
@@ -303,14 +312,15 @@ export default async function ResepePage({ params }: PageProps) {
       )}
 
           {/* Comments Section */}
-          <section className="print:hidden">
-            <h2 className="text-2xl font-bold mb-4">Ulasan</h2>
-            <Separator className="my-4" />
-            <CommentsWrapper 
-              recipeId={recipe.id} 
-              initialComments={recipe.comments}
-            />
+          <section className="mt-12">
+            <Suspense fallback={<div>Loading comments...</div>}>
+              <CommentsWrapper 
+                recipeId={recipe.id} 
+                initialComments={recipe.comments}
+              />
+            </Suspense>
           </section>
+
         </div>
       </article>
     </>

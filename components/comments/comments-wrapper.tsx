@@ -1,36 +1,14 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
 import { useSession } from "next-auth/react"
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { formatDistanceToNow } from 'date-fns'
-import { ms } from 'date-fns/locale'
-import { Trash2 } from 'lucide-react'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Comment } from "@/types/comments"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { formatDistanceToNow } from "date-fns"
+import { Trash2 } from "lucide-react"
 import { toast } from "sonner"
-
-interface Comment {
-  id: string
-  content: string
-  createdAt: Date
-  userId: string
-  user: {
-    name: string | null
-    image: string | null
-  }
-}
 
 interface CommentsWrapperProps {
   recipeId: string
@@ -38,165 +16,125 @@ interface CommentsWrapperProps {
 }
 
 export function CommentsWrapper({ recipeId, initialComments }: CommentsWrapperProps) {
-  const { data: session, status } = useSession()
-  const [comments, setComments] = useState(initialComments)
-  const [content, setContent] = useState('')
+  const { data: session } = useSession()
+  const router = useRouter()
+  const [comments, setComments] = useState<Comment[]>(initialComments)
+  const [content, setContent] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Handle new comment submission
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!content.trim()) return
 
+    setIsSubmitting(true)
     try {
-      setIsSubmitting(true)
-      setError(null)
-
-      const response = await fetch('/api/comments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content,
-          recipeId,
+      const res = await fetch("/api/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          content: content.trim(), 
+          recipeId 
         }),
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to post comment')
+      const data = await res.json()
+      if (!data.success) {
+        if (data.details) {
+          // Handle validation errors
+          const errors = data.details.map((err: any) => err.message).join(", ")
+          throw new Error(errors)
+        }
+        throw new Error(data.error || "Failed to add comment")
       }
 
-      const newComment = await response.json()
-      setComments((prev) => [newComment, ...prev])
-      setContent('')
-    } catch (err) {
-      setError('Failed to post comment. Please try again.')
+      // Add new comment to the list
+      setComments((prev) => [data.data, ...prev])
+      setContent("")
+      toast.success("Comment added successfully")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to add comment")
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleDeleteComment = async (commentId: string) => {
+  // Handle comment deletion
+  async function handleDelete(commentId: string) {
     try {
-      const response = await fetch(`/api/comments/${commentId}`, {
-        method: 'DELETE',
+      const res = await fetch(`/api/comments/${commentId}`, {
+        method: "DELETE",
       })
-      
-      if (!response.ok) {
-        const clonedResponse = response.clone()
-        
-        let errorMessage = 'Failed to delete comment'
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.error || errorMessage
-        } catch {
-          const errorText = await clonedResponse.text()
-          errorMessage = errorText || errorMessage
-        }
-        throw new Error(errorMessage)
-      }
-      
-      setComments((prev) => prev.filter((c) => c.id !== commentId))
-      toast.success('Ulasan berjaya dipadam')
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Gagal memadam ulasan'
-      console.error('Error deleting comment:', errorMessage)
-      toast.error('Gagal memadam ulasan. Sila cuba lagi.')
-    }
-  }
 
-  if (status === "loading") {
-    return <div>Loading...</div>
+      const data = await res.json()
+      if (!data.success) {
+        throw new Error(data.error)
+      }
+
+      // Remove deleted comment from the list
+      setComments((prev) => prev.filter((comment) => comment.id !== commentId))
+      toast.success("Comment deleted successfully")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete comment")
+    }
   }
 
   return (
     <div className="space-y-8">
+      <h2 className="text-2xl font-semibold tracking-tight">Comments</h2>
+
       {/* Comment Form */}
       {session?.user ? (
         <form onSubmit={handleSubmit} className="space-y-4">
           <Textarea
-            placeholder="Kongsi pendapat anda tentang resipi ini..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            placeholder="Share your thoughts..."
             className="min-h-[100px]"
-            disabled={isSubmitting}
           />
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <Button type="submit" disabled={isSubmitting || !content.trim()}>
-            {isSubmitting ? 'Menghantar...' : 'Hantar Ulasan'}
+          <Button 
+            type="submit" 
+            disabled={isSubmitting || !content.trim()}
+          >
+            {isSubmitting ? "Posting..." : "Post Comment"}
           </Button>
         </form>
       ) : (
-        <div className="bg-muted p-4 rounded-lg text-center">
-          <p>Sila log masuk untuk berkongsi ulasan anda.</p>
-          <Button variant="link" className="mt-2" asChild>
-            <a href="/login">Log Masuk</a>
-          </Button>
+        <div className="rounded-lg bg-muted p-4">
+          <p>Please <Button variant="link" onClick={() => router.push("/login")}>log in</Button> to leave a comment.</p>
         </div>
       )}
 
       {/* Comments List */}
       <div className="space-y-6">
-        {comments.map((comment) => (
-          <div key={comment.id} className="flex gap-4">
-            <Avatar>
-              <AvatarImage src={comment.user.image || undefined} />
-              <AvatarFallback>
-                {comment.user.name?.charAt(0) || '?'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-1">
+        {comments.length === 0 ? (
+          <p className="text-muted-foreground">No comments yet. Be the first to comment!</p>
+        ) : (
+          comments.map((comment) => (
+            <div 
+              key={comment.id} 
+              className="rounded-lg border p-4 space-y-2"
+            >
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">{comment.user.name}</span>
-                  <span className="text-muted-foreground text-sm">
-                    {formatDistanceToNow(new Date(comment.createdAt), {
-                      addSuffix: true,
-                      locale: ms,
-                    })}
+                  <span className="font-medium">{comment.user.name || "Anonymous"}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                   </span>
                 </div>
                 {session?.user?.id === comment.userId && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Padam Ulasan?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Tindakan ini tidak boleh dibatalkan. Ulasan ini akan dipadam secara kekal.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDeleteComment(comment.id)}
-                          className="bg-destructive hover:bg-destructive/90"
-                        >
-                          Padam
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(comment.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 )}
               </div>
-              <p className="text-gray-700">{comment.content}</p>
+              <p className="text-muted-foreground">{comment.content}</p>
             </div>
-          </div>
-        ))}
-
-        {comments.length === 0 && (
-          <p className="text-center text-muted-foreground">
-            Tiada ulasan lagi. Jadilah yang pertama berkongsi pendapat anda!
-          </p>
+          ))
         )}
       </div>
     </div>
