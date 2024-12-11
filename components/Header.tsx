@@ -45,14 +45,14 @@ export default function Header() {
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center py-4">
-          <Link href="/" className="text-2xl font-bold text-orange-600 hover:text-orange-700 transition-colors">
+        <div className="flex justify-between items-center py-3">
+          <Link href="/" className="text-xl font-bold text-orange-600 hover:text-orange-700 transition-colors">
             ResepiCheNom
           </Link>
           
           {/* Desktop Menu */}
-          <nav className="hidden lg:flex items-center space-x-6">
-            <Link href="/" className="text-gray-600 hover:text-orange-600 transition-colors text-base">
+          <nav className="hidden lg:flex items-center space-x-4">
+            <Link href="/" className="text-gray-600 hover:text-orange-600 transition-colors text-sm">
               Laman Utama
             </Link>
             <Dropdown
@@ -62,8 +62,9 @@ export default function Header() {
                 { label: 'Resipi Terbaru', href: '/resipi/terbaru' },
                 { label: 'Resipi Popular', href: '/resipi/popular' },
               ]}
+              className="text-sm"
             />
-            <CategoryDropdown />
+            <CategoryDropdown className="text-sm" />
             <Dropdown
               title="Koleksi Khas"
               items={[
@@ -71,8 +72,9 @@ export default function Header() {
                 { label: 'Ramadan', href: '/koleksi-khas/ramadan' },
                 { label: 'Tahun Baru', href: '/koleksi-khas/tahun-baru' },
               ]}
+              className="text-sm"
             />
-            <Link href="/video-resipi" className="text-gray-600 hover:text-orange-600 transition-colors text-base">
+            <Link href="/video-resipi" className="text-gray-600 hover:text-orange-600 transition-colors text-sm">
               Video Resipi
             </Link>
             <Link 
@@ -80,7 +82,7 @@ export default function Header() {
               className="text-gray-600 hover:text-orange-600 transition-colors focus:outline-none"
               aria-label="Search recipes"
             >
-              <Search className="h-5 w-5" />
+              <Search className="h-4 w-4" />
             </Link>
 
             {/* User Menu */}
@@ -96,21 +98,21 @@ export default function Header() {
                   <span className="text-sm font-medium">{session.user?.name}</span>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Akaun Saya</DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-sm">Akaun Saya</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/profil" className="cursor-pointer">Profil</Link>
+                    <Link href="/profil" className="cursor-pointer text-sm">Profil</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/resipi-saya" className="cursor-pointer">Resipi Saya</Link>
+                    <Link href="/resipi-saya" className="cursor-pointer text-sm">Resipi Saya</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/tetapan" className="cursor-pointer">Tetapan</Link>
+                    <Link href="/tetapan" className="cursor-pointer text-sm">Tetapan</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => signOut()}
-                    className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 text-sm"
                   >
                     Log Keluar
                   </DropdownMenuItem>
@@ -119,7 +121,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={() => signIn()}
-                className="text-gray-600 hover:text-orange-600 transition-colors"
+                className="text-gray-600 hover:text-orange-600 transition-colors text-sm"
               >
                 Log Masuk
               </button>
@@ -137,30 +139,30 @@ export default function Header() {
           <div className="lg:hidden flex items-center">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-600 hover:text-orange-600 transition-colors focus:outline-none mr-4"
+              className="text-gray-600 hover:text-orange-600 transition-colors focus:outline-none"
               aria-label="Toggle menu"
             >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <nav className="lg:hidden py-4 bg-white border-t border-gray-200">
-            <Link href="/" className="block py-2 px-4 text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+          <nav className="lg:hidden py-2 bg-white border-t border-gray-200">
+            <Link href="/" className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
               Laman Utama
             </Link>
-            <Link href="/resipi" className="block py-2 px-4 text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+            <Link href="/resipi" className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
               Resipi
             </Link>
-            <Link href="/kategori" className="block py-2 px-4 text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+            <Link href="/kategori" className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
               Kategori
             </Link>
-            <Link href="/koleksi-khas" className="block py-2 px-4 text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+            <Link href="/koleksi-khas" className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
               Koleksi Khas
             </Link>
-            <Link href="/video-resipi" className="block py-2 px-4 text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+            <Link href="/video-resipi" className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
               Video Resipi
             </Link>
 
@@ -170,18 +172,18 @@ export default function Header() {
                 <div className="py-2 px-4 text-gray-600 border-t border-gray-100 mt-2">
                   Selamat datang, {session.user?.name}
                 </div>
-                <Link href="/profil" className="block py-2 px-4 text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+                <Link href="/profil" className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
                   Profil
                 </Link>
-                <Link href="/resipi-saya" className="block py-2 px-4 text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+                <Link href="/resipi-saya" className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
                   Resipi Saya
                 </Link>
-                <Link href="/tetapan" className="block py-2 px-4 text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+                <Link href="/tetapan" className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
                   Tetapan
                 </Link>
                 <button
                   onClick={() => signOut()}
-                  className="block w-full text-left py-2 px-4 text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+                  className="block w-full text-left py-2 px-4 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
                 >
                   Log Keluar
                 </button>
@@ -189,13 +191,13 @@ export default function Header() {
             ) : (
               <button
                 onClick={() => signIn()}
-                className="block w-full text-left py-2 px-4 text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                className="block w-full text-left py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
               >
                 Log Masuk
               </button>
             )}
 
-            <Link href="/hantar-resipi" className="block py-2 px-4 text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+            <Link href="/hantar-resipi" className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
               Hantar Resipi Anda
             </Link>
           </nav>

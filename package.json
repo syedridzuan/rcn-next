@@ -49,6 +49,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.53.2",
+    "react-hot-toast": "^2.4.1",
     "remark": "^15.0.1",
     "remark-breaks": "^4.0.0",
     "remark-html": "^16.0.1",

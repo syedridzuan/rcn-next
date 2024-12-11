@@ -46,3 +46,7 @@ public/**/*.gif
 public/**/*.bmp
 public/**/*.svg
 public/**/*.webp
+
+# Ignore uploaded files but keep the directory
+public/uploads/profile/*
+!public/uploads/profile/.gitkeep

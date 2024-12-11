@@ -5,20 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(dateString: string | Date | null): string {
-  if (!dateString) return '-';
-  
-  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-  
-  if (isNaN(date.getTime())) return '-';
-
+export function formatDate(date: Date): string {
   return new Intl.DateTimeFormat('en-US', {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(date)
 }
 
 export const slugify = (str: string) => {

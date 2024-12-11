@@ -12,6 +12,7 @@ const config = {
         hostname: '**',
       },
     ],
+    domains: ['localhost'],
   },
 }
 
