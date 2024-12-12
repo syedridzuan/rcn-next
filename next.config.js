@@ -9,11 +9,15 @@ const config = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'resepichenom.com',
+        pathname: '/**',
       },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      }
     ],
-    domains: ['localhost'],
   },
 }
 
-module.exports = config 
+module.exports = config

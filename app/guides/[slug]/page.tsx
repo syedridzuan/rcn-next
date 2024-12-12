@@ -16,7 +16,8 @@ export async function generateMetadata({
 }: {
   params: { slug: string }
 }) {
-  const { slug } = params
+  const { slug } = await params;
+  
   const guide = await getGuideBySlug(slug)
   if (!guide) {
     return {
@@ -44,7 +45,7 @@ export default async function GuidePage({
 }: {
   params: { slug: string }
 }) {
-  const { slug } = params
+  const { slug } = await params
   const guide = await getGuideBySlug(slug)
 
   if (!guide) {

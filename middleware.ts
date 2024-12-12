@@ -6,8 +6,9 @@ export async function middleware(request: NextRequest) {
   try {
     const session = await auth()
 
-    // Check if it's a dashboard route
-    if (request.nextUrl.pathname.startsWith('/dashboard')) {
+    // Check if it's an admin or dashboard route
+    if (request.nextUrl.pathname.startsWith('/admin') || 
+        request.nextUrl.pathname.startsWith('/dashboard')) {
       // No session, redirect to login
       if (!session) {
         const loginUrl = new URL('/login', request.url)
@@ -15,8 +16,9 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(loginUrl)
       }
 
-      // Not an admin, redirect to home
-      if (session.user?.role !== 'ADMIN') {
+      // Admin routes require admin role
+      if (request.nextUrl.pathname.startsWith('/admin') && 
+          session.user?.role !== 'ADMIN') {
         return NextResponse.redirect(new URL('/', request.url))
       }
     }
@@ -40,6 +42,7 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      */
+    '/admin/:path*',
     '/dashboard/:path*',
     '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
   ],

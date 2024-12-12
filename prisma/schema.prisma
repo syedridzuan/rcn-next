@@ -16,6 +16,7 @@ model User {
   password   String?
   image      String?
   role       String         @default("USER")
+  status     String         @default("ACTIVE")
   recipes    Recipe[]
   comments   Comment[]
   guides     Guide[]
