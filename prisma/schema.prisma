@@ -1,103 +1,151 @@
-// This is your Prisma schema file
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite" // or another provider
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// Existing models
-model User {
-  id         String         @id @default(cuid())
-  name       String?
-  email      String         @unique
-  password   String?
-  image      String?
-  role       String         @default("USER")
-  status     String         @default("ACTIVE")
-  recipes    Recipe[]
-  comments   Comment[]
-  guides     Guide[]
-  gComments  GuideComment[]
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
-  reviews    Review[]
-  savedRecipes SavedRecipe[]
+
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
 }
 
-// Category model for recipe organization
+enum RecipeDifficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+enum RecipeStatus {
+  DRAFT
+  PUBLISHED
+  HIDDEN
+}
+
+enum CommentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SPAM
+}
+
+enum ReviewStatus {
+  DRAFT
+  PUBLISHED
+  HIDDEN
+}
+
+
+enum Role {
+  ADMIN
+  USER
+  EDITOR
+}
+
+model User {
+  id            String          @id @default(cuid())
+  name          String?
+  email         String?         @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  // Use the enum for role
+  role          Role?
+  status        UserStatus?
+  recipes       Recipe[]
+  comments      Comment[]
+  guides        Guide[]
+  guideComments GuideComment[]
+  reviews       Review[]
+  savedRecipes  SavedRecipe[]
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt // This ensures updatedAt is always set to now() on update
+
+}
+
 model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  slug        String    @unique
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
   description String?
   image       String?
   recipes     Recipe[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
-// Recipe model with tag relation
 model Recipe {
-  id            String          @id @default(cuid())
+  id            String           @id @default(cuid())
   title         String
-  slug          String          @unique
+  slug          String           @unique
   description   String?
-  language      String          @default("en")
+  language      String           @default("en")
   cookTime      Int
   prepTime      Int
   servings      Int
-  difficulty    String          @default("EASY")
+  difficulty    RecipeDifficulty @default(EASY)
+  status        RecipeStatus     @default(DRAFT)
   categoryId    String
   userId        String
-  category      Category        @relation(fields: [categoryId], references: [id])
-  user          User            @relation(fields: [userId], references: [id])
+  category      Category         @relation(fields: [categoryId], references: [id])
+  user          User             @relation(fields: [userId], references: [id])
   sections      RecipeSection[]
   images        RecipeImage[]
   comments      Comment[]
   tips          RecipeTip[]
-  tags          Tag[]           @relation("RecipesOnTags") // many-to-many with Tag
-  isEditorsPick Boolean  @default(false)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  tags          Tag[]            @relation("RecipesOnTags")
+  isEditorsPick Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
   reviews       Review[]
   avgRating     Float?
-  numReviews    Int       @default(0)
+  numReviews    Int              @default(0)
   savedBy       SavedRecipe[]
+
+  @@index([categoryId])
+  @@index([userId])
+  @@index([status])
+  @@index([isEditorsPick])
 }
 
 model RecipeSection {
-  id        String        @id @default(cuid())
+  id        String       @id @default(cuid())
   title     String
-  type      String         // "INGREDIENTS" | "INSTRUCTIONS" | "TIPS"
+  type      String
   recipeId  String
-  recipe    Recipe         @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipe    Recipe       @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   items     RecipeItem[]
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }
 
 model RecipeItem {
-  id            String        @id @default(cuid())
-  content       String
-  sectionId     String
-  section       RecipeSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id        String        @id @default(cuid())
+  content   String
+  sectionId String
+  section   RecipeSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  content   String   // Remove @db.Text since SQLite doesn't support it
-  status    String   @default("PENDING")
+  id        String        @id @default(cuid())
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  content   String
+  status    CommentStatus @default(PENDING)
   userId    String
   recipeId  String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe    Recipe        @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([recipeId])
@@ -126,42 +174,41 @@ model RecipeImage {
   updatedAt    DateTime @updatedAt
 }
 
-// Guide Models
 model Guide {
-  id          String         @id @default(cuid())
-  title       String
-  slug        String         @unique
-  content     String?
-  tags        Tag[]          @relation("GuidesOnTags") // many-to-many with Tag
-  authorId    String?
-  author      User?          @relation(fields: [authorId], references: [id])
-  sections    GuideSection[]
-  images      GuideImage[]
-  comments    GuideComment[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id        String         @id @default(cuid())
+  title     String
+  slug      String         @unique
+  content   String?
+  tags      Tag[]          @relation("GuidesOnTags")
+  authorId  String?
+  author    User?          @relation(fields: [authorId], references: [id])
+  sections  GuideSection[]
+  images    GuideImage[]
+  comments  GuideComment[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 }
 
 model GuideSection {
-  id        String      @id @default(cuid())
+  id        String   @id @default(cuid())
   title     String
   content   String
   guideId   String
-  guide     Guide       @relation(fields: [guideId], references: [id], onDelete: Cascade)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  guide     Guide    @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model GuideImage {
-  id           String   @id @default(cuid())
-  url          String
-  alt          String?
-  description  String?
-  isPrimary    Boolean  @default(false)
-  guideId      String
-  guide        Guide    @relation(fields: [guideId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  url         String
+  alt         String?
+  description String?
+  isPrimary   Boolean  @default(false)
+  guideId     String
+  guide       Guide    @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model GuideComment {
@@ -175,14 +222,13 @@ model GuideComment {
   updatedAt DateTime @updatedAt
 }
 
-// Tag model for categorizing recipes and guides
 model Tag {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  guides    Guide[]   @relation("GuidesOnTags")
-  recipes   Recipe[]  @relation("RecipesOnTags")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  name      String   @unique
+  guides    Guide[]  @relation("GuidesOnTags")
+  recipes   Recipe[] @relation("RecipesOnTags")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Subscriber {
@@ -196,24 +242,22 @@ model Subscriber {
 }
 
 model Review {
-  id          String    @id @default(cuid())
-  rating      Int
-  reviewText  String?
-  userId      String
-  recipeId    String
-  status      String    @default("PUBLISHED")
-  isVerified  Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         String       @id @default(cuid())
+  rating     Int
+  reviewText String?
+  userId     String
+  recipeId   String
+  status     ReviewStatus @default(PUBLISHED)
+  isVerified Boolean      @default(false)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 
-  // Relations
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  recipe      Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
-  // Constraints
+  @@unique([userId, recipeId])
   @@index([userId])
   @@index([recipeId])
-  @@unique([userId, recipeId])
 }
 
 model SavedRecipe {
@@ -222,9 +266,44 @@ model SavedRecipe {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   recipeId  String
   recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-  notes     String?   // New field for user notes
+  notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([userId, recipeId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }

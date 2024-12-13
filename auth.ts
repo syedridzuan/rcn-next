@@ -15,34 +15,39 @@ export const config = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        // Ensure credentials are provided
         if (!credentials?.email || !credentials?.password) {
-          return null;
+          throw new Error("Missing email or password");
         }
 
+        // Fetch user from the database
         const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
+          where: { email: credentials.email },
         });
 
-        if (!user || !user.password) {
-          return null;
+        if (!user) {
+          throw new Error("No user found with that email");
         }
 
-        const isPasswordValid = await bcryptjs.compare(
-          credentials.password,
-          user.password
-        );
+        if (!user.password) {
+          throw new Error("User does not have a password set");
+        }
 
+        // Validate password
+        const isPasswordValid = await bcryptjs.compare(credentials.password, user.password);
         if (!isPasswordValid) {
-          return null;
+          throw new Error("Invalid password");
         }
 
+        // Safely handle role (if not defined, default to USER)
+        const role = user.role ?? "USER";
+
+        // Return user object for NextAuth
         return {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role,
+          role,
         };
       },
     }),
@@ -52,6 +57,7 @@ export const config = {
   },
   callbacks: {
     async jwt({ token, user }) {
+      // When user logs in or refreshes, attach their ID and role to the JWT
       if (user) {
         token.id = user.id;
         token.role = user.role;
@@ -59,6 +65,7 @@ export const config = {
       return token;
     },
     async session({ session, token }) {
+      // Make sure session user includes ID and role
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;

@@ -31,9 +31,9 @@ async function main() {
       email: "admin@example.com",
       password: adminPassword,
       role: "ADMIN",
+      status: "ACTIVE", // Add the status field here
     },
   });
-
   // Create categories
   const categories = await Promise.all([
     prisma.category.create({
