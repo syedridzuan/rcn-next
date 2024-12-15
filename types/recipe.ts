@@ -1,14 +1,35 @@
 export interface Recipe {
   id: string
   title: string
-  description: string
-  ingredients: string[]
-  instructions: string[]
-  tips: {
+  description?: string
+  language: string
+  cookTime: number
+  prepTime: number
+  servings: number
+  difficulty: string
+  slug: string
+  categoryId: string
+  userId: string
+  sections: {
     id: string
-    content: string
+    title: string
+    type: string // 'INGREDIENTS' | 'INSTRUCTIONS'
+    items: {
+      id: string
+      content: string
+    }[]
   }[]
-  // ... other properties
+  category?: {
+    id: string
+    name: string
+  }
+  user?: {
+    id: string
+    name: string
+    email: string
+  }
+  createdAt: Date
+  updatedAt: Date
 }
 
 interface RecipeImage {
@@ -18,5 +39,23 @@ interface RecipeImage {
   thumbnailUrl: string;
   alt?: string;
   isPrimary: boolean;
+}
+
+export interface RecipeFormData {
+  title: string
+  description?: string
+  language: string
+  cookTime: number
+  prepTime: number
+  servings: number
+  difficulty: string
+  categoryId: string
+  sections: {
+    title: string
+    type: string
+    items: {
+      content: string
+    }[]
+  }[]
 }
 

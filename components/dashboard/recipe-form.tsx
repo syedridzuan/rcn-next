@@ -82,6 +82,7 @@ export function RecipeForm({ categories, initialData, recipeId }: RecipeFormProp
     })
 
   async function onSubmit(data: RecipeFormData) {
+    console.log("Submitting recipe data:", data);
     try {
       setIsPending(true)
       if (recipeId) {

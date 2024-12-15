@@ -1,8 +1,14 @@
+// types/subscriber.ts
+
+/**
+ * Represents a Subscriber from the database.
+ */
 export interface Subscriber {
   id: string
   email: string
   isVerified: boolean
-  verifiedAt: string | null
-  createdAt: string
-  updatedAt: string
-} 
+  verificationToken: string | null
+  verifiedAt: Date | null
+  createdAt: Date
+  updatedAt: Date
+}
