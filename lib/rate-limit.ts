@@ -1,55 +1,31 @@
-import { Ratelimit } from "@upstash/ratelimit"
 import { Redis } from "@upstash/redis"
-import { headers } from "next/headers"
+import { Ratelimit } from "@upstash/ratelimit"
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-})
-
-// Create a new ratelimiter that allows 5 requests per 10 seconds
+// Create a new ratelimiter that allows 10 requests per 10 seconds
 const ratelimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(
-    Number(process.env.RATE_LIMIT_REQUESTS) || 5,
-    "10 s"
-  ),
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(10, "10 s"),
+  analytics: true,
 })
 
-export interface RateLimitResponse {
-  success: boolean
-  remaining: number
-  limit: number
-  reset: number
-}
-
-export async function getRateLimitMiddleware(
-  key: string
-): Promise<RateLimitResponse> {
+export async function checkRateLimit(identifier: string) {
   try {
-    // Get headers and await them
-    const headersList = await headers()
-    const forwardedFor = headersList.get("x-forwarded-for")
-    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : "127.0.0.1"
-
-    // Apply rate limiting
-    const { success, limit, remaining, reset } = await ratelimit.limit(
-      `${key}_${ip}`
-    )
-
+    const { success, limit, reset, remaining } = await ratelimit.limit(identifier)
+    
     return {
       success,
-      remaining,
       limit,
-      reset
+      reset,
+      remaining,
     }
   } catch (error) {
-    console.error("Rate limit error:", error)
+    console.error("[RATE_LIMIT_ERROR]", error)
+    // If rate limiting fails, we'll allow the request through
     return {
-      success: true, // Fail open
-      remaining: 1,
-      limit: 5,
-      reset: Date.now() + 10000
+      success: true,
+      limit: 0,
+      reset: 0,
+      remaining: 0,
     }
   }
 }

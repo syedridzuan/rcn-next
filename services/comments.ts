@@ -1,145 +1,90 @@
-import { PrismaClient } from "@prisma/client"
-import { CommentInput, COMMENT_STATUS, Comment } from "@/types/comments"
-import { checkSpamWithReason } from "@/lib/spam-detection"
 import { prisma } from "@/lib/db"
+import { Prisma } from "@prisma/client"
+import type { CommentWithUser } from "@/types/comments"
 
-export class CommentError extends Error {
-  constructor(message: string, public status: number = 400) {
-    super(message)
-    this.name = "CommentError"
-  }
-}
-
-/**
- * Creates a new comment for a recipe
- * @param userId - The ID of the user creating the comment
- * @param data - The comment data (content and recipeId)
- * @param isAdmin - Whether the user is an admin (bypass spam check)
- * @returns The created comment with spam check results
- */
-export async function createComment(
-  userId: string, 
-  data: CommentInput,
-  isAdmin: boolean = false
-): Promise<{ comment: Comment; isPending: boolean; reason?: string }> {
-  // Check if recipe exists
-  const recipe = await prisma.recipe.findUnique({
-    where: { id: data.recipeId },
-  })
-
-  if (!recipe) {
-    throw new CommentError("Recipe not found", 404)
-  }
-
-  // Create comment with transaction to ensure data consistency
-  return await prisma.$transaction(async (tx) => {
-    // Check user's recent comments to prevent spam
-    const recentComments = await tx.comment.count({
+export async function getComments(recipeId: string) {
+  try {
+    // Only fetch top-level comments (parentId is null) with their replies
+    const comments = await prisma.comment.findMany({
       where: {
-        userId,
-        createdAt: {
-          gte: new Date(Date.now() - 60000), // Last minute
-        },
-      },
-    })
-
-    if (recentComments >= 3) {
-      throw new CommentError("Too many comments. Please wait a moment.", 429)
-    }
-
-    // Perform spam check (skip for admins)
-    const spamCheck = !isAdmin ? checkSpamWithReason(data.content) : { isSpam: false }
-    //console.log("Spam check result:", spamCheck)
-    // Log spam details for monitoring
-    if (spamCheck.details) {
-      console.log("[SPAM_CHECK]", {
-        userId,
-        recipeId: data.recipeId,
-        content: data.content,
-        ...spamCheck.details,
-      })
-    }
-
-    // Throw error if spam is detected
-    if (spamCheck.isSpam) {
-      throw new CommentError(
-        `Comment flagged as spam: ${spamCheck.reason}`,
-        400
-      )
-    }
-
-    const comment = await tx.comment.create({
-      data: {
-        content: data.content,
-        recipeId: data.recipeId,
-        userId,
-        status: COMMENT_STATUS.APPROVED, // All non-spam comments are approved
+        recipeId,
+        parentId: null, // Only get top-level comments
+        status: "APPROVED",
       },
       include: {
         user: {
           select: {
+            id: true,
             name: true,
+            image: true,
+          },
+        },
+        // Include one level of replies
+        replies: {
+          where: {
+            status: "APPROVED",
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    })
+
+    return comments as CommentWithUser[]
+  } catch (error) {
+    console.error("Error fetching comments:", error)
+    throw new Error("Failed to fetch comments")
+  }
+}
+
+export async function createComment(
+  data: Prisma.CommentUncheckedCreateInput
+) {
+  try {
+    // If parentId is provided, verify it's a valid top-level comment
+    if (data.parentId) {
+      const parentComment = await prisma.comment.findUnique({
+        where: { id: data.parentId },
+      })
+
+      if (!parentComment) {
+        throw new Error("Parent comment not found")
+      }
+
+      if (parentComment.parentId) {
+        throw new Error("Cannot reply to a reply")
+      }
+    }
+
+    const comment = await prisma.comment.create({
+      data,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
           },
         },
       },
     })
 
-    // Transform the comment to match our Comment type
-    const transformedComment: Comment = {
-      id: comment.id,
-      content: comment.content,
-      status: comment.status as CommentStatus,
-      userId: comment.userId,
-      recipeId: comment.recipeId,
-      createdAt: comment.createdAt,
-      updatedAt: comment.updatedAt,
-      user: comment.user,
-    }
-
-    return {
-      comment: transformedComment,
-      isPending: false,
-      reason: undefined
-    }
-  })
-}
-
-/**
- * Retrieves comments for a recipe
- * @param recipeId - The ID of the recipe
- * @param includeAll - Whether to include non-approved comments (admin only)
- * @returns Array of comments
- */
-export async function getRecipeComments(
-  recipeId: string, 
-  includeAll: boolean = false
-): Promise<Comment[]> {
-  const comments = await prisma.comment.findMany({
-    where: {
-      recipeId,
-      status: includeAll ? undefined : COMMENT_STATUS.APPROVED,
-    },
-    include: {
-      user: {
-        select: {
-          name: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  })
-
-  // Transform the comments to match our Comment type
-  return comments.map(comment => ({
-    id: comment.id,
-    content: comment.content,
-    status: comment.status as CommentStatus,
-    userId: comment.userId,
-    recipeId: comment.recipeId,
-    createdAt: comment.createdAt,
-    updatedAt: comment.updatedAt,
-    user: comment.user,
-  }))
+    return comment as CommentWithUser
+  } catch (error) {
+    console.error("Error creating comment:", error)
+    throw error
+  }
 } 

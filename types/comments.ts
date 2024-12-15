@@ -1,63 +1,18 @@
 import { z } from "zod"
-import { CommentStatus } from '@prisma/client'
-import type { User } from './user'
-import type { Recipe } from './recipe'
+import type { Comment, User } from "@prisma/client"
 
+export type CommentWithUser = Comment & {
+  user: Pick<User, "id" | "name" | "image">
+  replies?: CommentWithUser[]
+}
 
-// Using a const object for status values ensures type safety and consistency
-export const COMMENT_STATUS = {
-  PENDING: "PENDING",
-  APPROVED: "APPROVED",
-  REJECTED: "REJECTED",
-} as const
-
-export type CommentStatus = typeof COMMENT_STATUS[keyof typeof COMMENT_STATUS]
-
-// Schema for comment creation with strict validation rules
-export const CommentSchema = z.object({
-  // Content must be a non-empty string with reasonable length limits
-  content: z
-    .string({
-      required_error: "Comment content is required",
-      invalid_type_error: "Comment content must be a string",
-    })
+// Schema for creating a new comment
+export const CreateCommentSchema = z.object({
+  content: z.string()
     .min(1, "Comment cannot be empty")
-    .max(1000, "Comment is too long (max 1000 characters)")
-    .trim(), // Remove leading/trailing whitespace
-
-  // Recipe ID must be a valid CUID
-  recipeId: z
-    .string({
-      required_error: "Recipe ID is required",
-      invalid_type_error: "Recipe ID must be a string",
-    })
-    .cuid("Invalid recipe ID format") // Using CUID since that's what Prisma uses
+    .max(1000, "Comment is too long"),
+  recipeId: z.string().cuid(),
+  parentId: z.string().cuid().nullable().optional(),
 })
 
-export type CommentInput = z.infer<typeof CommentSchema>
-
-// API response type with detailed validation error support
-export type ApiResponse<T = any> = {
-  success: boolean
-  data?: T
-  error?: string
-  details?: Array<{
-    path: string[]
-    message: string
-  }>
-}
-
-
-
-
-export interface Comment {
-  id: string
-  createdAt: Date
-  updatedAt: Date
-  content: string
-  status: CommentStatus
-  userId: string
-  recipeId: string
-  user: User
-  recipe: Recipe
-}
+export type CreateCommentInput = z.infer<typeof CreateCommentSchema>

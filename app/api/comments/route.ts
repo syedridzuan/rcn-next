@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
-import { CommentSchema } from "@/types/comments"
-import { createComment, getRecipeComments, CommentError } from "@/services/comments"
-import { getRateLimitMiddleware } from "@/lib/rate-limit"
+import { checkRateLimit } from "@/lib/rate-limit"
+import { CreateCommentSchema } from "@/types/comments"
+import { createComment } from "@/services/comments"
 
 /**
  * POST /api/comments
@@ -21,92 +21,52 @@ import { getRateLimitMiddleware } from "@/lib/rate-limit"
  */
 export async function POST(req: Request) {
   try {
-    // 1. Authentication check
+    // Check authentication
     const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      )
+    if (!session?.user) {
+      return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    // 2. Rate limiting
-    const rateLimit = await getRateLimitMiddleware("comments")
-    if (!rateLimit.success) {
-      return NextResponse.json(
-        { success: false, error: "Too many requests" },
-        {
-          status: 429,
-          headers: {
-            "X-RateLimit-Limit": rateLimit.limit.toString(),
-            "X-RateLimit-Remaining": rateLimit.remaining.toString(),
-            "X-RateLimit-Reset": rateLimit.reset.toString(),
-          },
+    // Rate limiting
+    const { success, remaining } = await checkRateLimit(session.user.id)
+    if (!success) {
+      return new NextResponse("Too many requests", { 
+        status: 429,
+        headers: {
+          'X-RateLimit-Remaining': remaining.toString(),
         }
-      )
+      })
     }
 
-    // 3. Parse and validate request body
-    let body
-    try {
-      body = await req.json()
-    } catch (error) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: "Invalid JSON in request body" 
-        },
-        { status: 400 }
-      )
+    const json = await req.json()
+    const validatedFields = CreateCommentSchema.safeParse(json)
+
+    if (!validatedFields.success) {
+      return new NextResponse("Invalid input", { status: 400 })
     }
 
-    // 4. Validate against schema
-    const result = CommentSchema.safeParse(body)
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Validation failed",
-          details: result.error.errors.map(err => ({
-            path: err.path,
-            message: err.message
-          }))
-        },
-        { status: 400 }
-      )
-    }
+    const { content, recipeId, parentId } = validatedFields.data
 
-    // 5. Create comment (spam check happens inside createComment)
-    const isAdmin = session.user.role === "ADMIN"
-    const { comment, isPending, reason } = await createComment(
-      session.user.id, 
-      result.data,
-      isAdmin
-    )
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: comment,
-      isPending,
-      message: isPending 
-        ? "Your comment is under review and will be visible once approved" 
-        : undefined,
-      reason: isPending ? reason : undefined
+    const comment = await createComment({
+      content,
+      recipeId,
+      userId: session.user.id,
+      parentId: parentId || null,
+      status: "PENDING", // Or "APPROVED" depending on your moderation strategy
     })
+
+    return NextResponse.json(comment)
   } catch (error) {
     console.error("[COMMENTS_POST]", error)
-    
-    if (error instanceof CommentError) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: error.status }
-      )
+    if (error instanceof Error) {
+      if (error.message === "Cannot reply to a reply") {
+        return new NextResponse(error.message, { status: 400 })
+      }
+      if (error.message === "Parent comment not found") {
+        return new NextResponse(error.message, { status: 404 })
+      }
     }
-
-    return NextResponse.json(
-      { success: false, error: "Internal Server Error" },
-      { status: 500 }
-    )
+    return new NextResponse("Internal error", { status: 500 })
   }
 }
 
