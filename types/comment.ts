@@ -1,6 +1,7 @@
+// types/comment.ts
 import { CommentStatus } from '@prisma/client'
-import type { User } from './user'
-import type { Recipe } from './recipe'
+import { User } from '@/types/user'
+import { Recipe } from '@/types/recipe'
 
 export interface Comment {
   id: string
@@ -12,4 +13,7 @@ export interface Comment {
   recipeId: string
   user: User
   recipe: Recipe
+  parentId: string | null
+  parent?: Comment   // Optional, when fetched with include
+  replies?: Comment[] // Optional, when fetched with include
 }
