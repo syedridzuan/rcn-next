@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { deleteRecipe } from '@/app/dashboard/recipes/actions'
+import { deleteRecipe } from '@/app/dashboard/recipes-old/actions'
 import { toast } from 'sonner'
 
 interface DeleteRecipeButtonProps {

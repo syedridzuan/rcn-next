@@ -1,45 +1,45 @@
+
+
+import { RecipeDifficulty, RecipeStatus } from '@prisma/client'
+import type { Category } from './category'
+import type { User } from './user'
+import type { RecipeSection } from './recipeSection'
+import type { RecipeImage } from './recipeImage'
+import type { Comment } from './comment'
+import type { RecipeTip } from './recipeTip'
+import type { Tag } from './tag'
+import type { Review } from './review'
+import type { SavedRecipe } from './savedRecipe'
+
 export interface Recipe {
   id: string
   title: string
-  description?: string
+  slug: string
+  description: string | null
   language: string
   cookTime: number
   prepTime: number
   servings: number
-  difficulty: string
-  slug: string
+  difficulty: RecipeDifficulty
+  status: RecipeStatus
   categoryId: string
   userId: string
-  sections: {
-    id: string
-    title: string
-    type: string // 'INGREDIENTS' | 'INSTRUCTIONS'
-    items: {
-      id: string
-      content: string
-    }[]
-  }[]
-  category?: {
-    id: string
-    name: string
-  }
-  user?: {
-    id: string
-    name: string
-    email: string
-  }
+  category: Category
+  user: User
+  sections: RecipeSection[]
+  images: RecipeImage[]
+  comments: Comment[]
+  tips: RecipeTip[]
+  tags: Tag[]
+  isEditorsPick: boolean
   createdAt: Date
   updatedAt: Date
+  reviews: Review[]
+  avgRating: number | null
+  numReviews: number
+  savedBy: SavedRecipe[]
 }
 
-interface RecipeImage {
-  id: string;
-  url: string;
-  mediumUrl: string;
-  thumbnailUrl: string;
-  alt?: string;
-  isPrimary: boolean;
-}
 
 export interface RecipeFormData {
   title: string

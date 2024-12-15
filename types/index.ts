@@ -1,30 +1,21 @@
-export interface Recipe {
-  id: string
-  title: string
-  slug: string
-  cookTime: number
-  prepTime: number
-  images: RecipeImage[]
-  category: Category
-}
+// types/index.ts
 
-export interface RecipeImage {
-  id: string
-  url: string
-  isPrimary: boolean
-}
-
-export interface Category {
-  id: string
-  name: string
-}
-
-export interface SavedRecipe {
-  id: string
-  userId: string
-  recipeId: string
-  notes: string | null
-  recipe: Recipe
-  createdAt: Date
-  updatedAt: Date
-} 
+export * from './account'
+export * from './category'
+export * from './comment'
+export * from './guide'
+export * from './guideComment'
+export * from './guideImage'
+export * from './guideSection'
+export * from './recipe'
+export * from './recipeImage'
+export * from './recipeItem'
+export * from './recipeSection'
+export * from './recipeTip'
+export * from './review'
+export * from './savedRecipe'
+export * from './session'
+export * from './subscriber'
+export * from './tag'
+export * from './user'
+export * from './verificationToken'

@@ -1,12 +1,10 @@
-
+import type { Guide } from './guide'
 import type { Recipe } from './recipe'
 
-export interface Category {
+export interface Tag {
   id: string
   name: string
-  slug: string
-  description: string | null
-  image: string | null
+  guides: Guide[]
   recipes: Recipe[]
   createdAt: Date
   updatedAt: Date

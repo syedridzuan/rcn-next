@@ -1,4 +1,8 @@
 import { z } from "zod"
+import { CommentStatus } from '@prisma/client'
+import type { User } from './user'
+import type { Recipe } from './recipe'
+
 
 // Using a const object for status values ensures type safety and consistency
 export const COMMENT_STATUS = {
@@ -43,16 +47,17 @@ export type ApiResponse<T = any> = {
   }>
 }
 
-// Comment type for frontend use
-export type Comment = {
+
+
+
+export interface Comment {
   id: string
+  createdAt: Date
+  updatedAt: Date
   content: string
   status: CommentStatus
   userId: string
   recipeId: string
-  createdAt: Date
-  updatedAt: Date
-  user: {
-    name: string | null
-  }
-} 
+  user: User
+  recipe: Recipe
+}

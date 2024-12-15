@@ -9,16 +9,23 @@ import { Button } from '@/components/ui/button'
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { PlusCircle, Trash2 } from 'lucide-react'
-import { createRecipe, updateRecipe } from '@/app/dashboard/recipes/actions'
+import { createRecipe, updateRecipe } from '@/app/dashboard/recipes-old/actions'
 import { toast } from 'sonner'
 
 const recipeSchema = z.object({
@@ -27,7 +34,7 @@ const recipeSchema = z.object({
   language: z.string().min(1, 'Language is required'),
   cookTime: z.coerce.number().min(1, 'Cook time is required'),
   prepTime: z.coerce.number().min(1, 'Prep time is required'),
-  servings: z.coerce.number().min(1, 'Servings is required'),
+  servings: z.coerce.number().min(1, 'Number of servings is required'),
   difficulty: z.string().min(1, 'Difficulty is required'),
   categoryId: z.string().min(1, 'Category is required'),
   sections: z.array(z.object({
@@ -36,21 +43,21 @@ const recipeSchema = z.object({
     items: z.array(z.object({
       content: z.string().min(1, 'Item content is required')
     }))
-  })),
-  tips: z.array(z.string().min(1, 'Tip cannot be empty')).optional(),
-  tags: z.array(z.string()).optional()
+  }))
 })
 
 type RecipeFormData = z.infer<typeof recipeSchema>
 
 interface RecipeFormProps {
-  categories: { id: string; name: string }[]
-  tags: string[]
+  categories: {
+    id: string
+    name: string
+  }[]
   initialData?: RecipeFormData
   recipeId?: string
 }
 
-export function RecipeForm({ categories, tags, initialData, recipeId }: RecipeFormProps) {
+export function RecipeForm({ categories, initialData, recipeId }: RecipeFormProps) {
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
 
@@ -60,54 +67,37 @@ export function RecipeForm({ categories, tags, initialData, recipeId }: RecipeFo
       title: '',
       description: '',
       language: 'en',
-      cookTime: 10,
-      prepTime: 10,
+      cookTime: 0,
+      prepTime: 0,
       servings: 2,
       difficulty: 'EASY',
-      categoryId: categories[0]?.id || '',
-      sections: [],
-      tips: [],
-      tags: []
+      sections: []
     }
   })
 
-  const { fields: sections, append: appendSection, remove: removeSection } = useFieldArray({
-    name: 'sections',
-    control: form.control
-  })
-
-  const { fields: tips, append: appendTip, remove: removeTip } = useFieldArray({
-    name: 'tips',
-    control: form.control
-  })
-
-  const { fields: tagFields, append: appendTag, remove: removeTag } = useFieldArray({
-    name: 'tags',
-    control: form.control
-  })
+  const { fields: sections, append: appendSection, remove: removeSection } = 
+    useFieldArray({
+      name: 'sections',
+      control: form.control
+    })
 
   async function onSubmit(data: RecipeFormData) {
+    console.log("Submitting recipe data:", data);
     try {
       setIsPending(true)
       if (recipeId) {
-        const result = await updateRecipe(recipeId, data)
-        if (result?.success) {
-          toast.success('Recipe updated successfully')
-        }
+        await updateRecipe(recipeId, data)
+        toast.success('Recipe updated successfully')
       } else {
-        const result = await createRecipe(data)
-        if (result?.success) {
-          toast.success('Recipe created successfully')
-        }
+        await createRecipe(data)
+        toast.success('Recipe created successfully')
       }
-  
       router.push('/dashboard/recipes')
     } catch (error) {
       toast.error(recipeId ? 'Failed to update recipe' : 'Failed to create recipe')
       setIsPending(false)
     }
   }
-  
 
   return (
     <Form {...form}>
@@ -133,16 +123,19 @@ export function RecipeForm({ categories, tags, initialData, recipeId }: RecipeFo
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {categories.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -159,7 +152,10 @@ export function RecipeForm({ categories, tags, initialData, recipeId }: RecipeFo
               <FormItem className="md:col-span-2">
                 <FormLabel>Description</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Brief description of the recipe" {...field} />
+                  <Textarea
+                    placeholder="Brief description of the recipe"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -172,15 +168,18 @@ export function RecipeForm({ categories, tags, initialData, recipeId }: RecipeFo
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Language</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select language" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="ms">Malay</SelectItem>
                     <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="ms">Malay</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -194,7 +193,10 @@ export function RecipeForm({ categories, tags, initialData, recipeId }: RecipeFo
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Difficulty</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select difficulty" />
@@ -204,7 +206,6 @@ export function RecipeForm({ categories, tags, initialData, recipeId }: RecipeFo
                     <SelectItem value="EASY">Easy</SelectItem>
                     <SelectItem value="MEDIUM">Medium</SelectItem>
                     <SelectItem value="HARD">Hard</SelectItem>
-                    <SelectItem value="EXPERT">Expert</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -255,35 +256,6 @@ export function RecipeForm({ categories, tags, initialData, recipeId }: RecipeFo
           />
         </div>
 
-        {/* Tags Section */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Tags</h3>
-          <div className="flex flex-wrap gap-2">
-            {tags.map(tag => {
-              const selectedTags = form.watch('tags') || []
-              const isSelected = selectedTags.includes(tag)
-              return (
-                <Button
-                  key={tag}
-                  type="button"
-                  variant={isSelected ? "default" : "outline"}
-                  onClick={() => {
-                    const current = form.getValues('tags') || []
-                    if (isSelected) {
-                      form.setValue('tags', current.filter(t => t !== tag))
-                    } else {
-                      form.setValue('tags', [...current, tag])
-                    }
-                  }}
-                >
-                  {tag}
-                </Button>
-              )
-            })}
-          </div>
-          <FormMessage />
-        </div>
-
         {/* Recipe Sections */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -292,7 +264,11 @@ export function RecipeForm({ categories, tags, initialData, recipeId }: RecipeFo
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => appendSection({ title: '', type: 'INGREDIENTS', items: [{ content: '' }] })}
+              onClick={() => appendSection({
+                title: '',
+                type: 'INGREDIENTS',
+                items: [{ content: '' }]
+              })}
             >
               <PlusCircle className="w-4 h-4 mr-2" />
               Add Section
@@ -309,48 +285,12 @@ export function RecipeForm({ categories, tags, initialData, recipeId }: RecipeFo
           ))}
         </div>
 
-        {/* Tips Section */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Tips</h3>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => appendTip('')}
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Add Tip
-            </Button>
-          </div>
-          {tips.map((tip, index) => (
-            <div key={tip.id} className="flex gap-2 items-center">
-              <FormField
-                control={form.control}
-                name={`tips.${index}`}
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormControl>
-                      <Input placeholder="e.g., Let dough rest for 10 mins" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => removeTip(index)}
-              >
-                <Trash2 className="w-4 h-4 text-red-500" />
-              </Button>
-            </div>
-          ))}
-        </div>
-
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={() => router.back()}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+          >
             Cancel
           </Button>
           <Button type="submit" disabled={isPending}>
@@ -460,6 +400,7 @@ function RecipeSection({ form, index, onRemove }: {
             </Button>
           </div>
         ))}
+
         <Button
           type="button"
           variant="outline"
@@ -472,4 +413,4 @@ function RecipeSection({ form, index, onRemove }: {
       </div>
     </div>
   )
-}
+} 

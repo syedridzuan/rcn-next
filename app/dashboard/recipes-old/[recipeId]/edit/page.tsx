@@ -2,29 +2,38 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { RecipeForm } from '@/components/dashboard/recipe-form'
 
-interface PageProps {
+interface EditRecipePageProps {
   params: {
     recipeId: string
   }
 }
 
-async function getRecipe(recipeId: string) {
-  const recipe = await prisma.recipe.findUnique({
-    where: { id: recipeId },
-    include: {
-      sections: {
-        include: {
-          items: true
+export default async function EditRecipePage({ params }: EditRecipePageProps) {
+  const { recipeId } = await params
+
+  const [recipe, categories] = await Promise.all([
+    prisma.recipe.findUnique({
+      where: { id: recipeId },
+      include: {
+        sections: {
+          include: {
+            items: true
+          }
         }
       }
-    }
-  })
+    }),
+    prisma.category.findMany({
+      orderBy: {
+        name: 'asc'
+      }
+    })
+  ])
 
   if (!recipe) {
-    return null
+    notFound()
   }
 
-  return {
+  const initialData: RecipeFormData = {
     title: recipe.title,
     description: recipe.description || '',
     language: recipe.language,
@@ -41,25 +50,6 @@ async function getRecipe(recipeId: string) {
       }))
     }))
   }
-}
-
-async function getCategories() {
-  return await prisma.category.findMany({
-    orderBy: {
-      name: 'asc'
-    }
-  })
-}
-
-export default async function EditRecipePage({ params }: PageProps) {
-  const [recipe, categories] = await Promise.all([
-    getRecipe(params.recipeId),
-    getCategories()
-  ])
-
-  if (!recipe) {
-    notFound()
-  }
 
   return (
     <div className="container mx-auto py-8">
@@ -67,8 +57,8 @@ export default async function EditRecipePage({ params }: PageProps) {
         <h1 className="text-2xl font-bold mb-6">Edit Recipe</h1>
         <RecipeForm 
           categories={categories}
-          initialData={recipe}
-          recipeId={params.recipeId}
+          initialData={initialData}
+          recipeId={recipeId}
         />
       </div>
     </div>

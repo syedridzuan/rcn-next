@@ -1,8 +1,3 @@
-// types/subscriber.ts
-
-/**
- * Represents a Subscriber from the database.
- */
 export interface Subscriber {
   id: string
   email: string

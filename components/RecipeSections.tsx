@@ -1,62 +1,47 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Utensils, List } from 'lucide-react'
-
-interface RecipeItem {
-  id: string
-  content: string
-}
-
-interface RecipeSection {
-  id: string
-  title: string
-  type: string
-  items: RecipeItem[]
-}
+import { Separator } from "@/components/ui/separator"
 
 interface RecipeSectionsProps {
-  sections: RecipeSection[]
-  labels?: {
+  sections: {
+    id: string
+    title: string
+    type: string
+    items: {
+      id: string
+      content: string
+    }[]
+  }[]
+  labels: {
     ingredients: string
     instructions: string
   }
 }
 
-export function RecipeSections({
-  sections,
-  labels = {
-    ingredients: "Bahan-bahan",
-    instructions: "Cara Memasak",
-  },
-}: RecipeSectionsProps) {
-  const ingredientSections = sections.filter(
-    (section) => section.type === "INGREDIENTS"
-  )
-  const instructionSections = sections.filter(
-    (section) => section.type === "INSTRUCTIONS"
-  )
+export function RecipeSections({ sections, labels }: RecipeSectionsProps) {
+  // Separate sections by type
+  const ingredientSections = sections.filter(section => section.type === 'INGREDIENTS')
+  const instructionSections = sections.filter(section => section.type === 'INSTRUCTIONS')
 
   return (
-    <div className="space-y-8">
-      {/* Ingredients Card */}
-      <section>
-        <Card className="border-orange-200">
-          <CardHeader className="bg-orange-50 border-b border-orange-200">
-            <CardTitle className="flex items-center gap-2 text-2xl text-orange-600">
-              <List className="h-6 w-6" />
-              {labels.ingredients}
-            </CardTitle>
+    <div className="space-y-6">
+      {/* Ingredients */}
+      {ingredientSections.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{labels.ingredients}</CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
-            {ingredientSections.map((section) => (
-              <div key={section.id} className="mb-6 last:mb-0">
+          <CardContent className="space-y-6">
+            {ingredientSections.map((section, index) => (
+              <div key={section.id}>
+                {index > 0 && <Separator className="my-4" />}
                 {section.title && (
-                  <h3 className="font-medium text-lg mb-3 text-orange-700">{section.title}</h3>
+                  <h4 className="font-medium text-lg mb-3">{section.title}</h4>
                 )}
                 <ul className="space-y-2">
-                  {section.items.map((item) => (
-                    <li key={item.id} className="flex items-center gap-2 text-gray-700">
-                      <span className="text-orange-500 font-bold">•</span>
-                      {item.content}
+                  {section.items.map(item => (
+                    <li key={item.id} className="flex items-start gap-2">
+                      <span className="w-2 h-2 mt-2 rounded-full bg-primary" />
+                      <span>{item.content}</span>
                     </li>
                   ))}
                 </ul>
@@ -64,31 +49,36 @@ export function RecipeSections({
             ))}
           </CardContent>
         </Card>
-      </section>
+      )}
 
-      {/* Instructions Card */}
-      <section>
-        <Card className="border-orange-200">
-          <CardHeader className="bg-orange-50 border-b border-orange-200">
-            <CardTitle className="flex items-center gap-2 text-2xl text-orange-600">
-              <Utensils className="h-6 w-6" />
-              {labels.instructions}
-            </CardTitle>
+      {/* Instructions */}
+      {instructionSections.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{labels.instructions}</CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
-            <ol className="space-y-6">
-              {instructionSections[0]?.items.map((item, index) => (
-                <li key={item.id} className="flex items-start gap-4">
-                  <span className="flex-shrink-0 w-8 h-8 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold">
-                    {index + 1}
-                  </span>
-                  <p className="text-gray-700 mt-1">{item.content}</p>
-                </li>
-              ))}
-            </ol>
+          <CardContent className="space-y-6">
+            {instructionSections.map((section, index) => (
+              <div key={section.id}>
+                {index > 0 && <Separator className="my-4" />}
+                {section.title && (
+                  <h4 className="font-medium text-lg mb-3">{section.title}</h4>
+                )}
+                <ol className="space-y-4">
+                  {section.items.map((item, itemIndex) => (
+                    <li key={item.id} className="flex items-start gap-4">
+                      <span className="flex-none flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-medium">
+                        {itemIndex + 1}
+                      </span>
+                      <span className="flex-1 pt-1">{item.content}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
           </CardContent>
         </Card>
-      </section>
+      )}
     </div>
   )
 }
