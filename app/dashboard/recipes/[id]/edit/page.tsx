@@ -27,7 +27,12 @@ export default async function EditRecipePage({ params }: { params: Promise<{ id:
     orderBy: { name: 'asc' }
   })
   
-  const tags = ['Vegan', 'Italian', 'Quick', 'Gluten-Free']
+  //const tags = ['Vegan', 'Italian', 'Quick', 'Gluten-Free']
+  const allTags = await prisma.tag.findMany({
+    orderBy: { name: 'asc' }
+  })
+  const tags = allTags.map(tag => tag.name)
+  
   const selectedTags = recipe.tags.map(tag => tag.name) || []
 
   const initialData = {

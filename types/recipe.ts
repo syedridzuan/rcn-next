@@ -1,5 +1,3 @@
-
-
 import { RecipeDifficulty, RecipeStatus } from '@prisma/client'
 import type { Category } from './category'
 import type { User } from './user'
@@ -43,7 +41,7 @@ export interface Recipe {
 
 export interface RecipeFormData {
   title: string
-  description?: string
+  description: string
   language: string
   cookTime: number
   prepTime: number
