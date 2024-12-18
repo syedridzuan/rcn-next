@@ -18,23 +18,31 @@ export function CommentsWrapper({ recipeId, initialComments }: CommentsWrapperPr
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
 
   const handleCommentSubmit = async (newComment: CommentWithUser) => {
-    if (newComment.parentId) {
-      // Add reply to parent comment
-      setComments(comments.map(comment => {
-        if (comment.id === newComment.parentId) {
-          return {
-            ...comment,
-            replies: [...(comment.replies || []), newComment],
+    console.log('handleCommentSubmit called with:', newComment)
+
+    try {
+      if (newComment.parentId) {
+        console.log('Adding reply to parent:', newComment.parentId)
+        setComments(comments.map(comment => {
+          if (comment.id === newComment.parentId) {
+            return {
+              ...comment,
+              replies: [...(comment.replies || []), newComment],
+            }
           }
-        }
-        return comment
-      }))
-    } else {
-      // Add new top-level comment
-      setComments([newComment, ...comments])
+          return comment
+        }))
+      } else {
+        console.log('Adding new top-level comment')
+        setComments([newComment, ...comments])
+      }
+      setReplyingTo(null)
+    } catch (error) {
+      console.error('Error in handleCommentSubmit:', error)
     }
-    setReplyingTo(null)
   }
+
+  console.log('Current comments:', comments)
 
   return (
     <div className="space-y-6">

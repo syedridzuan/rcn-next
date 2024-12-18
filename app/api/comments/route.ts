@@ -42,7 +42,22 @@ export async function POST(req: Request) {
     const validatedFields = CreateCommentSchema.safeParse(json)
 
     if (!validatedFields.success) {
-      return new NextResponse("Invalid input", { status: 400 })
+      console.log("Validation failed:", {
+        input: json,
+        errors: validatedFields.error.errors
+      })
+      return new NextResponse(
+        JSON.stringify({
+          error: "Invalid input",
+          details: validatedFields.error.errors
+        }), 
+        { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
     }
 
     const { content, recipeId, parentId } = validatedFields.data
@@ -52,21 +67,20 @@ export async function POST(req: Request) {
       recipeId,
       userId: session.user.id,
       parentId: parentId || null,
-      status: "PENDING", // Or "APPROVED" depending on your moderation strategy
+      status: "APPROVED",
     })
 
     return NextResponse.json(comment)
   } catch (error) {
-    console.error("[COMMENTS_POST]", error)
-    if (error instanceof Error) {
-      if (error.message === "Cannot reply to a reply") {
-        return new NextResponse(error.message, { status: 400 })
-      }
-      if (error.message === "Parent comment not found") {
-        return new NextResponse(error.message, { status: 404 })
-      }
-    }
-    return new NextResponse("Internal error", { status: 500 })
+    console.error("Server-side error:", error)
+    return new Response(JSON.stringify({ 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
   }
 }
 
@@ -94,11 +108,18 @@ export async function GET(req: Request) {
       )
     }
 
+    // Add this debug log
+    console.log("Fetching comments for recipe:", recipeId)
+
     // Check if user is admin for including all comments
     const session = await auth()
     const isAdmin = session?.user?.role === "ADMIN"
     
     const comments = await getRecipeComments(recipeId, isAdmin)
+    
+    // Add this debug log
+    console.log("Found comments:", comments)
+
     return NextResponse.json({ success: true, data: comments })
   } catch (error) {
     console.error("[COMMENTS_GET]", error)

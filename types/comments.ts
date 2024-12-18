@@ -11,8 +11,8 @@ export const CreateCommentSchema = z.object({
   content: z.string()
     .min(1, "Comment cannot be empty")
     .max(1000, "Comment is too long"),
-  recipeId: z.string().cuid(),
-  parentId: z.string().cuid().nullable().optional(),
+  recipeId: z.string().uuid(),
+  parentId: z.string().optional(),
 })
 
 export type CreateCommentInput = z.infer<typeof CreateCommentSchema>

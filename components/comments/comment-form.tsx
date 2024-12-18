@@ -32,31 +32,63 @@ export function CommentForm({
     },
   })
 
-  async function handleSubmit(data: CreateCommentInput) {
-    setIsSubmitting(true)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    console.log('Form submitted') // Debug log
+    
     try {
-      const res = await fetch("/api/comments", {
+      const payload = {
+        content: form.getValues().content,
+        recipeId,
+        parentId
+      }
+      console.log("Sending comment payload:", payload)
+
+      const response = await fetch("/api/comments", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       })
 
-      if (!res.ok) {
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("API error response:", {
+          status: response.status,
+          statusText: response.statusText,
+          data: errorData
+        })
         throw new Error("Failed to post comment")
       }
 
-      const comment = await res.json()
+      const comment = await response.json()
+      console.log('API data:', comment) // Debug log
+
       onSubmit(comment)
       form.reset()
     } catch (error) {
-      console.error("Error posting comment:", error)
+      console.error("Error posting comment:", {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      
+      if (error instanceof Response) {
+        const errorText = await error.text()
+        console.error("API Response:", {
+          status: error.status,
+          statusText: error.statusText,
+          body: errorText
+        })
+      }
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <Textarea
         {...form.register("content")}
         placeholder="Write a comment..."
