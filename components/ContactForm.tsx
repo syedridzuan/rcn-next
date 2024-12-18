@@ -7,16 +7,44 @@ export default function ContactForm() {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState<string>('')
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    // Here you would typically send the form data to your server
-    console.log('Form submitted:', { name, email, message })
-    // Reset form fields
-    setName('')
-    setEmail('')
-    setMessage('')
-    // Show a success message (in a real app, you'd want to handle this more robustly)
-    alert('Terima kasih! Mesej anda telah dihantar.')
+    setStatus('loading')
+    setErrorMessage('')
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, message }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        setStatus('error')
+        // Either show specific validation errors or a generic error
+        if (errorData.details) {
+          const firstError = errorData.details[0]?.message || "Validation error"
+          setErrorMessage(firstError)
+        } else {
+          setErrorMessage(errorData.error || "Failed to send message")
+        }
+        return
+      }
+
+      // If successful
+      setStatus('success')
+      setName('')
+      setEmail('')
+      setMessage('')
+    } catch (error: any) {
+      console.error('Contact form submission failed:', error)
+      setStatus('error')
+      setErrorMessage('Unknown error occurred. Please try again later.')
+    }
   }
 
   return (
@@ -62,14 +90,23 @@ export default function ContactForm() {
             required
           ></textarea>
         </div>
+
+        {status === 'error' && (
+          <p className="text-red-600 mb-4">{errorMessage}</p>
+        )}
+
+        {status === 'success' && (
+          <p className="text-green-600 mb-4">Terima kasih! Mesej anda telah dihantar.</p>
+        )}
+
         <button
           type="submit"
           className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+          disabled={status === 'loading'}
         >
-          Hantar
+          {status === 'loading' ? 'Menghantar...' : 'Hantar'}
         </button>
       </form>
     </div>
   )
 }
-
