@@ -48,6 +48,12 @@ enum Role {
   EDITOR
 }
 
+
+enum RecipeSectionType {
+  INGREDIENTS
+  INSTRUCTIONS
+}
+
 model User {
   id            String          @id @default(cuid())
   name          String?
@@ -80,6 +86,10 @@ model Category {
   recipes     Recipe[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  
+  // New field for storing the number of associated recipes directly
+  recipesCount Int       @default(0)
+
 }
 
 model Recipe {
@@ -117,14 +127,14 @@ model Recipe {
 }
 
 model RecipeSection {
-  id        String       @id @default(cuid())
+  id        String            @id @default(cuid())
   title     String
-  type      String
+  type      RecipeSectionType
   recipeId  String
-  recipe    Recipe       @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipe    Recipe            @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   items     RecipeItem[]
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 }
 
 model RecipeItem {

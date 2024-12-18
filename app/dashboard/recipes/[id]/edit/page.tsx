@@ -52,6 +52,7 @@ export default async function EditRecipePage({ params }: { params: Promise<{ id:
     tips: recipe.tips.map(t => t.content),
     tags: selectedTags
   }
+  console.log(initialData)
 
   return (
     <div className="container mx-auto p-8">

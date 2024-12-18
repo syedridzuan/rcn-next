@@ -242,8 +242,13 @@ export default async function ResepePage({ params }: PageProps) {
             <h1 className="text-4xl font-bold">{recipe.title}</h1>
             
             {recipe.description && (
-              <p className="text-gray-600 text-lg">{recipe.description}</p>
-            )}
+            <div 
+              className="text-gray-600 text-lg" 
+              dangerouslySetInnerHTML={{ 
+                __html: recipe.description.replace(/<\/p>/g, '</p>&nbsp;') 
+              }} 
+            />
+          )}
 
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-2">

@@ -10,11 +10,17 @@ export async function getCategories() {
     select: {
       name: true,
       slug: true,
+      _count: {
+        select: {
+          recipes: true
+        }
+      }
     }
   })
 
   return categories.map(category => ({
     label: category.name,
-    href: `/resepi/kategori/${category.slug}`
+    href: `/kategori/${category.slug}`,
+    count: category._count.recipes
   }))
 } 

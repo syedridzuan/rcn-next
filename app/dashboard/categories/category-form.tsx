@@ -6,6 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { useState } from "react"
+import Image from "next/image"
 import {
   Form,
   FormControl,
@@ -24,11 +26,12 @@ const FormSchema = z.object({
 type FormData = z.infer<typeof FormSchema>
 
 interface CategoryFormProps {
-  onSubmit: (formData: FormData) => Promise<void>
+  onSubmit: (formData: FormData, image?: File) => Promise<void>
   isSubmitting: boolean
   initialData?: {
     name: string
     description?: string | null
+    image?: string | null
   }
 }
 
@@ -37,6 +40,11 @@ export default function CategoryForm({
   isSubmitting, 
   initialData 
 }: CategoryFormProps) {
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    initialData?.image || null
+  )
+
   const form = useForm<FormData>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -45,8 +53,17 @@ export default function CategoryForm({
     },
   })
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedImage(file)
+      const url = URL.createObjectURL(file)
+      setPreviewUrl(url)
+    }
+  }
+
   const handleSubmit = async (values: FormData) => {
-    await onSubmit(values)
+    await onSubmit(values, selectedImage || undefined)
   }
 
   return (
@@ -87,6 +104,29 @@ export default function CategoryForm({
                 </FormItem>
               )}
             />
+
+            <FormItem>
+              <FormLabel>Image (Optional)</FormLabel>
+              <FormControl>
+                <div className="space-y-4">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                  {previewUrl && (
+                    <div className="relative w-32 h-32">
+                      <Image
+                        src={previewUrl}
+                        alt="Preview"
+                        fill
+                        className="object-cover rounded-md"
+                      />
+                    </div>
+                  )}
+                </div>
+              </FormControl>
+            </FormItem>
 
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Saving..." : initialData ? "Update" : "Create"}

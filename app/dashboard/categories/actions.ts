@@ -3,10 +3,13 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import { writeFile } from 'fs/promises'
+import path from 'path'
 
 interface CategoryInput {
   name: string
   description?: string
+  image?: File
 }
 
 export async function createCategory(input: CategoryInput) {
@@ -20,11 +23,26 @@ export async function createCategory(input: CategoryInput) {
   }
 
   try {
+    let imagePath = null
+
+    if (input.image) {
+      // Create unique filename
+      const bytes = await input.image.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      const filename = `${Date.now()}-${input.image.name}`
+      const publicPath = path.join(process.cwd(), 'public', 'uploads', filename)
+      
+      // Save the file
+      await writeFile(publicPath, buffer)
+      imagePath = `/uploads/${filename}`
+    }
+
     const category = await prisma.category.create({
       data: {
         name: input.name,
         description: input.description,
         slug: input.name.toLowerCase().replace(/\s+/g, '-'),
+        image: imagePath,
       }
     })
     

@@ -10,11 +10,18 @@ export default function NewCategoryPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (data: { name: string; description?: string }) => {
+  const handleSubmit = async (
+    data: { name: string; description?: string },
+    image?: File
+  ) => {
     setIsSubmitting(true);
     
     try {
-      const result = await createCategory(data);
+      const result = await createCategory({
+        ...data,
+        image
+      });
+      
       if (result.success) {
         toast.success("Category created successfully");
         router.push("/dashboard/categories");
