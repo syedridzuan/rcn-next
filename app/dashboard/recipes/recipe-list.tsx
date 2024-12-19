@@ -16,6 +16,7 @@ interface Recipe {
   difficulty: string
   status: string
   updatedAt: Date
+  isEditorsPick: boolean
   category: {
     name: string
   } | null
@@ -57,6 +58,7 @@ export default function RecipeList({ recipes }: RecipeListProps) {
               <th className="p-3 font-medium">Difficulty</th>
               <th className="p-3 font-medium">Status</th>
               <th className="p-3 font-medium">Updated At</th>
+              <th className="p-3 font-medium">Editor’s Pick</th>
               <th className="p-3 font-medium text-right">Actions</th>
             </tr>
           </thead>
@@ -66,7 +68,7 @@ export default function RecipeList({ recipes }: RecipeListProps) {
             ))}
             {filteredRecipes.length === 0 && (
               <tr>
-                <td colSpan={6} className="p-4 text-center text-gray-500">
+                <td colSpan={7} className="p-4 text-center text-gray-500">
                   No matching recipes found.
                 </td>
               </tr>
@@ -79,6 +81,8 @@ export default function RecipeList({ recipes }: RecipeListProps) {
 }
 
 function RecipeRow({ recipe }: { recipe: Recipe }) {
+  console.log('Recipe:', recipe);
+
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -97,11 +101,29 @@ function RecipeRow({ recipe }: { recipe: Recipe }) {
 
   return (
     <tr className="border-b last:border-0 hover:bg-gray-50">
-      <td className="p-3">{recipe.title}</td>
+      <td className="p-3">
+        <div className="flex items-center gap-2">
+          {recipe.title}
+          {recipe.isEditorsPick && (
+            <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700">
+              Editor's Pick
+            </span>
+          )}
+        </div>
+      </td>
       <td className="p-3">{recipe.category?.name || '—'}</td>
       <td className="p-3">{recipe.difficulty}</td>
       <td className="p-3">{recipe.status}</td>
       <td className="p-3">{formatDate(recipe.updatedAt)}</td>
+      <td className="p-3">
+        {recipe.isEditorsPick ? (
+          <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700">
+            Yes
+          </span>
+        ) : (
+          <span className="text-xs text-gray-500">No</span>
+        )}
+      </td>
       <td className="p-3 text-right">
         <div className="flex items-center gap-2 justify-end">
           <Link href={`/dashboard/recipes/${recipe.id}/edit`}>

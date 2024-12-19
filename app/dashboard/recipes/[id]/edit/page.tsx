@@ -50,7 +50,8 @@ export default async function EditRecipePage({ params }: { params: Promise<{ id:
       items: sec.items.map(it => ({ content: it.content }))
     })),
     tips: recipe.tips.map(t => t.content),
-    tags: selectedTags
+    tags: selectedTags,
+    isEditorsPick: recipe.isEditorsPick
   }
   console.log(initialData)
 

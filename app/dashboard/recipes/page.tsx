@@ -13,6 +13,7 @@ export default async function RecipesPage() {
       difficulty: true,
       status: true,
       updatedAt: true,
+      isEditorsPick: true,
       category: { select: { name: true } }
     },
     orderBy: { updatedAt: 'desc' }

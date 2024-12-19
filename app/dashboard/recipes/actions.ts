@@ -28,6 +28,7 @@ interface RecipeFormData {
   sections: RecipeSectionData[]
   tips?: string[]
   tags?: string[]
+  isEditorsPick: boolean
   // image?: string
 }
 
@@ -76,7 +77,8 @@ export async function createRecipe(data: RecipeFormData) {
               create: { name: tagName }
             }))
           }
-        : undefined
+        : undefined,
+      isEditorsPick: data.isEditorsPick
     }
   })
 
@@ -152,7 +154,8 @@ export async function updateRecipe(id: string, data: RecipeFormData) {
               create: { name: tagName }
             }))
           }
-        : undefined
+        : undefined,
+      isEditorsPick: data.isEditorsPick
     }
   })
 

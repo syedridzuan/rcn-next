@@ -38,7 +38,8 @@ const recipeSchema = z.object({
     }))
   })),
   tips: z.array(z.string().min(1, 'Tip cannot be empty')).optional(),
-  tags: z.array(z.string()).optional()
+  tags: z.array(z.string()).optional(),
+  isEditorsPick: z.boolean().optional()
 })
 
 type RecipeFormData = z.infer<typeof recipeSchema>
@@ -67,7 +68,8 @@ export function RecipeForm({ categories, tags, initialData, recipeId }: RecipeFo
       categoryId: categories[0]?.id || '',
       sections: [],
       tips: [],
-      tags: []
+      tags: [],
+      isEditorsPick: false
     }
   })
 
@@ -250,6 +252,29 @@ export function RecipeForm({ categories, tags, initialData, recipeId }: RecipeFo
                   <Input type="number" min="1" {...field} />
                 </FormControl>
                 <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="isEditorsPick"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <input
+                    type="checkbox"
+                    checked={field.value}
+                    onChange={field.onChange}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Editor's Pick</FormLabel>
+                  <p className="text-sm text-gray-500">
+                    Feature this recipe as an editor's pick
+                  </p>
+                </div>
               </FormItem>
             )}
           />
