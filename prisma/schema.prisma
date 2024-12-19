@@ -97,6 +97,7 @@ model Recipe {
   title         String
   slug          String           @unique
   description   String?
+  shortDescription     String?
   language      String           @default("en")
   cookTime      Int
   prepTime      Int

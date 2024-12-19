@@ -65,6 +65,8 @@ export default function Header() {
               className="text-sm"
             />
             <CategoryDropdown className="text-sm" />
+
+            {/* Koleksi Khas Hidden for now
             <Dropdown
               title="Koleksi Khas"
               items={[
@@ -74,9 +76,14 @@ export default function Header() {
               ]}
               className="text-sm"
             />
+            */}
+
+            {/* Video Resipi Hidden for now
             <Link href="/video-resipi" className="text-gray-600 hover:text-orange-600 transition-colors text-sm">
               Video Resipi
             </Link>
+            */}
+
             <Link 
               href="/cari"
               className="text-gray-600 hover:text-orange-600 transition-colors focus:outline-none"
@@ -127,12 +134,14 @@ export default function Header() {
               </button>
             )}
 
+            {/* Hantar Resipi Anda Hidden for now
             <Link 
               href="/hantar-resipi" 
               className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors"
             >
               Hantar Resipi Anda
             </Link>
+            */}
           </nav>
 
           {/* Mobile Menu Button */}
@@ -159,12 +168,18 @@ export default function Header() {
             <Link href="/kategori" className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
               Kategori
             </Link>
+
+            {/* Koleksi Khas Hidden for now
             <Link href="/koleksi-khas" className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
               Koleksi Khas
             </Link>
+            */}
+
+            {/* Video Resipi Hidden for now
             <Link href="/video-resipi" className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
               Video Resipi
             </Link>
+            */}
 
             {/* Mobile User Menu */}
             {session ? (
@@ -197,13 +212,14 @@ export default function Header() {
               </button>
             )}
 
+            {/* Hantar Resipi Anda Hidden for now
             <Link href="/hantar-resipi" className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors">
               Hantar Resipi Anda
             </Link>
+            */}
           </nav>
         )}
       </div>
     </header>
   )
 }
-
