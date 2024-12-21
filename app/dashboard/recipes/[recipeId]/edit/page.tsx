@@ -1,6 +1,6 @@
-import { prisma } from '@/lib/db'
-import { notFound } from 'next/navigation'
-import { RecipeForm } from '@/components/dashboard/recipe-form'
+import { prisma } from "@/lib/db"
+import { notFound } from "next/navigation"
+import { RecipeForm } from "@/components/dashboard/recipe-form"
 
 interface EditRecipePageProps {
   params: {
@@ -8,15 +8,20 @@ interface EditRecipePageProps {
   }
 }
 
-export default async function EditRecipePage({ params }: { params: Promise<{ recipeId: string }> }) {
+export default async function EditRecipePage({
+  params,
+}: {
+  params: Promise<{ recipeId: string }>
+}) {
   const { recipeId } = await params
+
   const recipe = await prisma.recipe.findUnique({
     where: { id: recipeId },
     include: {
       sections: { include: { items: true } },
       tags: true,
-      tips: true
-    }
+      tips: true,
+    },
   })
 
   if (!recipe) {
@@ -24,37 +29,36 @@ export default async function EditRecipePage({ params }: { params: Promise<{ rec
   }
 
   const categories = await prisma.category.findMany({
-    orderBy: { name: 'asc' }
+    orderBy: { name: "asc" },
   })
-  
-  //const tags = ['Vegan', 'Italian', 'Quick', 'Gluten-Free']
+
   const allTags = await prisma.tag.findMany({
-    orderBy: { name: 'asc' }
+    orderBy: { name: "asc" },
   })
-  const tags = allTags.map(tag => tag.name)
-  
-  const selectedTags = recipe.tags.map(tag => tag.name) || []
+  const allTagNames = allTags.map((tag) => tag.name)
+
+  const selectedTags = recipe.tags.map((tag) => tag.name) || []
 
   const initialData = {
     title: recipe.title,
-    description: recipe.description || '',
-    shortDescription: recipe.shortDescription || '',
-    language: recipe.language || 'en',
+    description: recipe.description ?? "",
+    shortDescription: recipe.shortDescription ?? "",
+    language: recipe.language ?? "en",
     cookTime: recipe.cookTime,
     prepTime: recipe.prepTime,
     servings: recipe.servings,
     difficulty: recipe.difficulty,
     categoryId: recipe.categoryId,
-    sections: recipe.sections.map(sec => ({
+    sections: recipe.sections.map((sec) => ({
       title: sec.title,
       type: sec.type,
-      items: sec.items.map(it => ({ content: it.content }))
+      items: sec.items.map((it) => ({ content: it.content })),
     })),
-    tips: recipe.tips.map(t => t.content),
+    tips: recipe.tips.map((t) => t.content),
+    // Convert array of selected tag strings to the form’s "tags" array
     tags: selectedTags,
-    isEditorsPick: recipe.isEditorsPick
+    isEditorsPick: recipe.isEditorsPick,
   }
-  console.log(initialData)
 
   return (
     <div className="container mx-auto p-8">
@@ -62,7 +66,7 @@ export default async function EditRecipePage({ params }: { params: Promise<{ rec
         <h1 className="text-2xl font-bold mb-6">Edit Recipe</h1>
         <RecipeForm
           categories={categories}
-          tags={tags}
+          allTagSuggestions={allTagNames}
           initialData={initialData}
           recipeId={recipe.id}
         />
