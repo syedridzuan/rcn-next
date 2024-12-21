@@ -4,14 +4,14 @@ import { RecipeForm } from '@/components/dashboard/recipe-form'
 
 interface EditRecipePageProps {
   params: {
-    id: string
+    recipeId: string
   }
 }
 
-export default async function EditRecipePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+export default async function EditRecipePage({ params }: { params: Promise<{ recipeId: string }> }) {
+  const { recipeId } = await params
   const recipe = await prisma.recipe.findUnique({
-    where: { id },
+    where: { id: recipeId },
     include: {
       sections: { include: { items: true } },
       tags: true,
@@ -38,6 +38,7 @@ export default async function EditRecipePage({ params }: { params: Promise<{ id:
   const initialData = {
     title: recipe.title,
     description: recipe.description || '',
+    shortDescription: recipe.shortDescription || '',
     language: recipe.language || 'en',
     cookTime: recipe.cookTime,
     prepTime: recipe.prepTime,

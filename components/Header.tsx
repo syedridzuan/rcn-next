@@ -108,13 +108,13 @@ export default function Header() {
                   <DropdownMenuLabel className="text-sm">Akaun Saya</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/profil" className="cursor-pointer text-sm">Profil</Link>
+                    <Link href="/account/profile" className="cursor-pointer text-sm">Profil</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
+                  {/* <DropdownMenuItem asChild>
                     <Link href="/resipi-saya" className="cursor-pointer text-sm">Resipi Saya</Link>
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                   <DropdownMenuItem asChild>
-                    <Link href="/tetapan" className="cursor-pointer text-sm">Tetapan</Link>
+                    <Link href="/account" className="cursor-pointer text-sm">Tetapan</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 

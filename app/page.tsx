@@ -121,7 +121,7 @@ export default async function HomePage() {
                   )}
                   <div className="p-6">
                     <h3 className="font-semibold text-xl mb-2 group-hover:text-orange-600 transition-colors duration-300">{recipe.title}</h3>
-                    <p className="text-gray-600 text-sm mb-4">{recipe.description}</p>
+                    <p className="text-gray-600 text-sm mb-4">{recipe.shortDescription}</p>
                     <div className="flex items-center justify-between text-sm text-gray-500">
                       <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded">{recipe.category.name}</span>
                       <span>{recipe.cookTime + recipe.prepTime} minit</span>
@@ -157,7 +157,7 @@ export default async function HomePage() {
                 )}
                 <div className="p-6">
                   <h3 className="font-semibold text-xl mb-2 group-hover:text-orange-600 transition-colors duration-300">{recipe.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4">{recipe.description}</p>
+                  <p className="text-gray-600 text-sm mb-4">{recipe.shortDescription}</p>
                   <div className="flex items-center justify-between text-sm text-gray-500">
                     <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded">{recipe.category.name}</span>
                     <span>{recipe.cookTime + recipe.prepTime} minit</span>

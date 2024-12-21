@@ -24,6 +24,7 @@ import { toast } from 'sonner'
 const recipeSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
+  shortDescription: z.string().optional(),
   language: z.string().min(1, 'Language is required'),
   cookTime: z.coerce.number().min(1, 'Cook time is required'),
   prepTime: z.coerce.number().min(1, 'Prep time is required'),
@@ -60,6 +61,7 @@ export function RecipeForm({ categories, tags, initialData, recipeId }: RecipeFo
     defaultValues: initialData || {
       title: '',
       description: '',
+      shortDescription: '',
       language: 'en',
       cookTime: 10,
       prepTime: 10,
@@ -161,7 +163,27 @@ export function RecipeForm({ categories, tags, initialData, recipeId }: RecipeFo
               <FormItem className="md:col-span-2">
                 <FormLabel>Description</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Brief description of the recipe" {...field} />
+                  <Textarea 
+                    placeholder="Brief description of the recipe" 
+                    {...field} 
+                    className="h-32"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="shortDescription"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Short Description</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Brief description of the recipe" 
+                  {...field}
+                  className="h-32"/>
                 </FormControl>
                 <FormMessage />
               </FormItem>

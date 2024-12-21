@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { Clock, Users, ChefHat, Calendar } from 'lucide-react'
+import { Clock, Users, ChefHat, Calendar, Tag } from 'lucide-react'
 import { prisma } from "@/lib/db"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -71,6 +71,13 @@ async function getRecipe(slug: string) {
         },
       },
       images: true,
+      tags: {
+        select: {
+          id: true,
+          name: true,
+          slug: true
+        }
+      },
       savedBy: session?.user?.id ? {
         where: {
           userId: session.user.id
@@ -151,8 +158,8 @@ export default async function ResepePage({ params }: PageProps) {
     datePublished: recipe.createdAt.toISOString(),
     prepTime: `PT${recipe.prepTime}M`,
     cookTime: `PT${recipe.cookTime}M`,
-    totalTime: `PT${recipe.prepTime + recipe.cookTime}M`,
-    recipeYield: `${recipe.servings} hidangan`,
+    totalTime: `PT${recipe.totalTime || (recipe.prepTime + recipe.cookTime)}M`,
+    recipeYield: recipe.servings,
     recipeCategory: recipe.category?.name,
     recipeCuisine: "Malaysian",
     recipeIngredient: recipe.sections
@@ -192,14 +199,15 @@ export default async function ResepePage({ params }: PageProps) {
         <header className="mb-8">
           {primaryImage ? (
             <div className="relative aspect-video rounded-lg overflow-hidden mb-6">
-              <Image
-                src={primaryImage.url}
-                alt={primaryImage.alt || recipe.title}
-                fill
-                className="object-cover"
-                priority
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              />
+            <Image
+              src={primaryImage.url}
+              alt={primaryImage.alt || recipe.title}
+              fill
+              className="object-cover"
+              priority
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              quality={100}
+            />
             </div>
           ) : null}
 
@@ -284,20 +292,40 @@ export default async function ResepePage({ params }: PageProps) {
         </header>
 
         {/* Recipe Meta Info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <RecipeMetaCards
             prepTime={recipe.prepTime}
             cookTime={recipe.cookTime}
+            totalTime={recipe.totalTime}
             servings={recipe.servings}
             labels={{
               prepTime: "Masa Penyediaan",
               cookTime: "Masa Memasak",
+              totalTime: "Jumlah Masa",
               servings: "Hidangan",
               minutes: "minit",
               people: "orang",
             }}
           />
         </div>
+
+        {/* Tags Section */}
+        {recipe.tags && recipe.tags.length > 0 && (
+          <div className="mb-8">
+            <div className="flex flex-wrap gap-2">
+              {recipe.tags.map((tag) => (
+                <Link 
+                  key={tag.id}
+                  href={`/tag/${tag.slug}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors"
+                >
+                  <Tag className="w-4 h-4" />
+                  <span>{tag.name}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Recipe Content */}
         <div className="space-y-8">

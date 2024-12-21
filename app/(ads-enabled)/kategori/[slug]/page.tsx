@@ -98,6 +98,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
             select: { name: true, image: true },
           },
           tags: true,
+          images: true,
         },
         orderBy,
         skip,
@@ -128,6 +129,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
     include: {
       user: { select: { name: true, image: true } },
       tags: true,
+      images: true,
     }
   })
 

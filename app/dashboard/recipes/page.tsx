@@ -14,6 +14,7 @@ export default async function RecipesPage() {
       status: true,
       updatedAt: true,
       isEditorsPick: true,
+      images: true,
       category: { select: { name: true } }
     },
     orderBy: { updatedAt: 'desc' }

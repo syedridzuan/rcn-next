@@ -101,6 +101,7 @@ model Recipe {
   language      String           @default("en")
   cookTime      Int
   prepTime      Int
+  totalTime     Int?
   servings      Int
   difficulty    RecipeDifficulty @default(EASY)
   status        RecipeStatus     @default(DRAFT)
@@ -240,12 +241,16 @@ model GuideComment {
 }
 
 model Tag {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  guides    Guide[]  @relation("GuidesOnTags")
-  recipes   Recipe[] @relation("RecipesOnTags")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String   @unique
+  slug         String   @unique
+  description  String?
+  image        String?
+  guides       Guide[]  @relation("GuidesOnTags")
+  recipes      Recipe[] @relation("RecipesOnTags")
+  recipesCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Subscriber {

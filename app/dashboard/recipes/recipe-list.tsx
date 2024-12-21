@@ -6,9 +6,26 @@ import { deleteRecipe } from './actions'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogTrigger,
+  AlertDialogAction,
+  AlertDialogCancel
+} from '@/components/ui/alert-dialog'
 import { formatDate } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
+
+interface RecipeImage {
+  id: string
+  url: string
+  alt?: string
+  isPrimary?: boolean
+}
 
 interface Recipe {
   id: string
@@ -20,6 +37,7 @@ interface Recipe {
   category: {
     name: string
   } | null
+  images?: RecipeImage[]
 }
 
 interface RecipeListProps {
@@ -81,8 +99,6 @@ export default function RecipeList({ recipes }: RecipeListProps) {
 }
 
 function RecipeRow({ recipe }: { recipe: Recipe }) {
-  console.log('Recipe:', recipe);
-
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -99,6 +115,8 @@ function RecipeRow({ recipe }: { recipe: Recipe }) {
     })
   }
 
+  const hasImages = (recipe.images && recipe.images.length > 0)
+  console.log("hasImages-- ", hasImages)
   return (
     <tr className="border-b last:border-0 hover:bg-gray-50">
       <td className="p-3">
@@ -126,6 +144,15 @@ function RecipeRow({ recipe }: { recipe: Recipe }) {
       </td>
       <td className="p-3 text-right">
         <div className="flex items-center gap-2 justify-end">
+          <Link href={`/dashboard/recipes/${recipe.id}/images`}>
+            <Button 
+              variant={hasImages ? "default" : "outline"} 
+              size="sm" 
+              className={hasImages ? "bg-green-500 text-white hover:bg-green-600" : ""}
+            >
+              Images
+            </Button>
+          </Link>
           <Link href={`/dashboard/recipes/${recipe.id}/edit`}>
             <Button variant="outline" size="sm">Edit</Button>
           </Link>
