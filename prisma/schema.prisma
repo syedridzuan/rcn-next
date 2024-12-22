@@ -59,11 +59,17 @@ model User {
   name          String?
   email         String?         @unique
   emailVerified DateTime?
+  username String @unique
   password      String?
   image         String?
   // Use the enum for role
   role          Role?
   status        UserStatus?
+  instagramHandle String?
+  facebookHandle  String?
+  tiktokHandle    String?
+  blogUrl         String?
+  recipeCount Int @default(0)
   recipes       Recipe[]
   comments      Comment[]
   guides        Guide[]

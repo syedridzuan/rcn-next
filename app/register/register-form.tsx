@@ -31,42 +31,35 @@ export function RegisterForm() {
   const router = useRouter()
   const [isPending, startTransition] = React.useTransition()
 
-  // Initialize form with react-hook-form and zod validation
+  // Initialize form with new field: username
   const form = useForm<RegisterInput>({
     resolver: zodResolver(RegisterSchema),
     defaultValues: {
       name: "",
+      username: "",
       email: "",
       password: "",
       terms: false,
     },
   })
 
-  // Handle form submission
   function onSubmit(data: RegisterInput) {
     startTransition(async () => {
       try {
         const result = await registerAction(data)
-
         if (!result.success) {
-          // Show field-specific errors
           if (result.fieldErrors) {
             for (const [field, error] of Object.entries(result.fieldErrors)) {
-              form.setError(field as keyof RegisterInput, {
-                message: error,
-              })
+              form.setError(field as keyof RegisterInput, { message: error })
             }
             return
           }
-
-          // Show general error
-          toast.error(result.message || "Something went wrong")
+          toast.error(result.message || "Registration failed")
           return
         }
-
         // Registration successful
-        toast.success("Account created successfully")
-        router.push("/auth/signin")
+        toast.success("Account created successfully. Check your email to verify.")
+        router.push("/auth/verify-email-prompt")
       } catch (error) {
         toast.error("Something went wrong. Please try again.")
       }
@@ -75,10 +68,8 @@ export function RegisterForm() {
 
   return (
     <Form {...form}>
-      <form 
-        onSubmit={form.handleSubmit(onSubmit)} 
-        className="space-y-4"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {/* Name */}
         <FormField
           control={form.control}
           name="name"
@@ -86,15 +77,29 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Name</FormLabel>
               <FormControl>
-                <Input 
-                  placeholder="Enter your name" 
-                  {...field} 
-                />
+                <Input placeholder="Enter your full name" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {/* Username */}
+        <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Username</FormLabel>
+              <FormControl>
+                <Input placeholder="Pick a unique username" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Email */}
         <FormField
           control={form.control}
           name="email"
@@ -102,16 +107,14 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input 
-                  type="email"
-                  placeholder="Enter your email" 
-                  {...field} 
-                />
+                <Input type="email" placeholder="Enter your email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {/* Password */}
         <FormField
           control={form.control}
           name="password"
@@ -119,21 +122,19 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input 
-                  type="password"
-                  placeholder="Create a password" 
-                  {...field} 
-                />
+                <Input type="password" placeholder="Create a password" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {/* Terms checkbox */}
         <FormField
           control={form.control}
           name="terms"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+            <FormItem className="flex flex-row items-start space-x-3">
               <FormControl>
                 <Checkbox
                   checked={field.value}
@@ -150,10 +151,8 @@ export function RegisterForm() {
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Terms and Conditions</DialogTitle>
-                        <DialogDescription className="mt-4">
-                          {/* Add your terms content here */}
-                          By creating an account, you agree to our terms of service
-                          and privacy policy...
+                        <DialogDescription>
+                          Your T&C text here...
                         </DialogDescription>
                       </DialogHeader>
                     </DialogContent>
@@ -164,6 +163,7 @@ export function RegisterForm() {
             </FormItem>
           )}
         />
+
         <Button
           type="submit"
           className="w-full"
@@ -174,4 +174,4 @@ export function RegisterForm() {
       </form>
     </Form>
   )
-} 
+}
