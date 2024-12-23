@@ -37,16 +37,18 @@ export function SignInForm() {
 
       if (result.error) {
         if (result.error === "email_not_verified") {
-          setError("Please verify your email before logging in.");
+          setError("Sila sahkan emel anda sebelum log masuk.");
         } else {
-          // Map other error codes to user-friendly messages
+          // Pemetaan mesej ralat kepada bahasa pengguna
           const errorMessages: Record<string, string> = {
-            "invalid_password": "Invalid password.",
-            "user_not_found": "No account found with that email.",
-            "no_password_set": "This account does not have a password set.",
-            "missing_credentials": "Please enter both email and password.",
+            invalid_password: "Kata laluan tidak sah.",
+            user_not_found: "Tiada akaun ditemui dengan emel tersebut.",
+            no_password_set: "Akaun ini tidak mempunyai kata laluan yang ditetapkan.",
+            missing_credentials: "Sila masukkan kedua-dua emel dan kata laluan.",
           };
-          setError(errorMessages[result.error] || "An error occurred during sign in.");
+          setError(
+            errorMessages[result.error] || "Berlaku ralat semasa log masuk."
+          );
         }
       } else if (result.ok) {
         router.push(callbackUrl);
@@ -54,7 +56,7 @@ export function SignInForm() {
       }
     } catch (error) {
       console.error("Sign in error:", error);
-      setError("An unexpected error occurred");
+      setError("Berlaku ralat yang tidak dijangka");
     } finally {
       setIsLoading(false);
     }
@@ -63,34 +65,37 @@ export function SignInForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input 
-          id="email" 
-          name="email" 
-          type="email" 
-          required 
-          placeholder="Enter your email" 
+        <Label htmlFor="email">Emel</Label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          required
+          placeholder="Masukkan emel anda"
           autoComplete="email"
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <Input 
-          id="password" 
-          name="password" 
-          type="password" 
-          required 
-          placeholder="Enter your password" 
+        <Label htmlFor="password">Kata Laluan</Label>
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          required
+          placeholder="Masukkan kata laluan anda"
           autoComplete="current-password"
         />
       </div>
       {error && (
-        <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md" role="alert">
+        <div
+          className="p-3 text-sm text-red-500 bg-red-50 rounded-md"
+          role="alert"
+        >
           {error}
         </div>
       )}
       <Button className="w-full" type="submit" disabled={isLoading}>
-        {isLoading ? "Signing in..." : "Sign In"}
+        {isLoading ? "Sedang log masuk..." : "Log Masuk"}
       </Button>
     </form>
   );
