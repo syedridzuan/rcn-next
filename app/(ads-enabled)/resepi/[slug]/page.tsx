@@ -82,7 +82,8 @@ async function getRecipe(slug: string) {
 }
 
 export async function generateMetadata({ params }: { params: PageProps["params"] }): Promise<Metadata> {
-  const recipe = await getRecipe(params.slug)
+  const { slug } = await params;
+  const recipe = await getRecipe(slug)
   if (!recipe) {
     return { title: "Resepi Tidak Dijumpai" }
   }
@@ -116,7 +117,8 @@ const difficultyTranslations: Record<string, string> = {
 }
 
 export default async function ResepePage({ params }: { params: PageProps["params"] }) {
-  const recipe = await getRecipe(params.slug)
+  const { slug } = await params;
+  const recipe = await getRecipe(slug)
   if (!recipe) {
     notFound()
   }

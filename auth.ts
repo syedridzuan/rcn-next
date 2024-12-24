@@ -87,7 +87,7 @@ export const config: NextAuthConfig = {
     },
 
     async jwt({ token, user }) {
-      console.log("=== jwt callback === token:", token, " user:", user);
+      //console.log("=== jwt callback === token:", token, " user:", user);
 
       // If real user returned from authorize() => copy to token
       if (user?.id && user.id !== "temp-unverified") {

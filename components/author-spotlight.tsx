@@ -28,7 +28,6 @@ interface AuthorSpotlightProps {
 }
 
 export function AuthorSpotlight({ user }: AuthorSpotlightProps) {
-  console.log("user----->", user)
   if (!user) return null
 
   return (

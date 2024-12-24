@@ -59,17 +59,23 @@ model User {
   name          String?
   email         String?         @unique
   emailVerified DateTime?
-  username String @unique
+  username      String          @unique
   password      String?
   image         String?
-  // Use the enum for role
   role          Role?
   status        UserStatus?
   instagramHandle String?
   facebookHandle  String?
   tiktokHandle    String?
   blogUrl         String?
-  recipeCount Int @default(0)
+  recipeCount     Int            @default(0)
+
+  // NEW FIELDS: Notification preferences
+  subscribeNewsletter       Boolean @default(true) 
+  subscribeCommentReply     Boolean @default(true)
+  subscribeRecipeComment    Boolean @default(true)
+
+  // Relations
   recipes       Recipe[]
   comments      Comment[]
   guides        Guide[]
@@ -78,9 +84,8 @@ model User {
   savedRecipes  SavedRecipe[]
   accounts      Account[]
   sessions      Session[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt // This ensures updatedAt is always set to now() on update
-
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model Category {

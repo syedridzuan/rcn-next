@@ -1,95 +1,104 @@
-import { NextResponse } from "next/server"
-import { auth } from "@/auth"
-import { checkRateLimit } from "@/lib/rate-limit"
-import { CreateCommentSchema } from "@/types/comments"
-import { createComment } from "@/services/comments"
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { CreateCommentSchema } from "@/types/comments";
+import { createComment } from "@/services/comments";
+// 1) Import your Akismet helper
+import { checkCommentForSpam } from "@/lib/akismet";
 
-/**
- * POST /api/comments
- * Creates a new comment for a recipe
- * 
- * @body {
- *   content: string - Comment content (1-1000 chars)
- *   recipeId: string - UUID of the recipe
- * }
- * 
- * @returns {
- *   success: boolean
- *   data?: Comment
- *   error?: string
- * }
- */
 export async function POST(req: Request) {
   try {
-    // Check authentication
-    const session = await auth()
+    // 2) Check authentication
+    const session = await auth();
     if (!session?.user) {
-      return new NextResponse("Unauthorized", { status: 401 })
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Rate limiting
-    const { success, remaining } = await checkRateLimit(session.user.id)
+    // 3) Rate limiting
+    const { success, remaining } = await checkRateLimit(session.user.id);
     if (!success) {
-      return new NextResponse("Too many requests", { 
+      return new NextResponse("Too many requests", {
         status: 429,
-        headers: {
-          'X-RateLimit-Remaining': remaining.toString(),
-        }
-      })
+        headers: { "X-RateLimit-Remaining": remaining.toString() },
+      });
     }
 
-    const json = await req.json()
-    const validatedFields = CreateCommentSchema.safeParse(json)
-
+    // 4) Parse and validate request body
+    const json = await req.json();
+    const validatedFields = CreateCommentSchema.safeParse(json);
     if (!validatedFields.success) {
-      console.log("Validation failed:", {
-        input: json,
-        errors: validatedFields.error.errors
-      })
-      return new NextResponse(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           error: "Invalid input",
-          details: validatedFields.error.errors
-        }), 
-        { 
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      )
+          details: validatedFields.error.errors,
+        },
+        { status: 400 }
+      );
     }
 
-    const { content, recipeId, parentId } = validatedFields.data
+    // 5) Extract comment fields
+    const { content, recipeId, parentId } = validatedFields.data;
 
+    // 6) Prepare data for Akismet
+    // (e.g., ip, user agent, author name/email if known)
+    const userIp = req.headers.get("x-forwarded-for") || "";
+    const userAgent = req.headers.get("user-agent") || "";
+    const commentAuthor = session.user.name || "Anonymous";
+    const commentEmail = session.user.email || "";
+
+    // 7) Run the Akismet check
+    //    (You may need to change the parameter object shape
+    //     to match your checkCommentForSpam signature.)
+    const isSpam = await checkCommentForSpam({
+      user_ip: userIp,
+      user_agent: userAgent,
+      comment_author: commentAuthor,
+      comment_author_email: commentEmail,
+      comment_content: content,
+    });
+
+    if (isSpam) {
+      console.log("Comment flagged as spam:", content);
+      // 8) Either reject entirely or store as “SPAM”
+      //    (depending on your design)
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Comment flagged as spam",
+        },
+        { status: 400 }
+      );
+    }
+
+    // 9) Otherwise, create the comment
     const comment = await createComment({
       content,
       recipeId,
       userId: session.user.id,
       parentId: parentId || null,
-      status: "APPROVED",
-    })
+      status: "APPROVED", // or "PENDING" if you want to moderate
+    });
 
-    return NextResponse.json(comment)
+    return NextResponse.json(comment);
   } catch (error) {
-    console.error("Server-side error:", error)
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    console.error("Server-side error:", error);
+    return new NextResponse(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+      { status: 500 }
+    );
   }
 }
+
+// ...the GET method remains unchanged or you can keep it simple.
 
 /**
  * GET /api/comments?recipeId={uuid}
  * Retrieves comments for a recipe
- * 
+ *
  * @query recipeId - UUID of the recipe
- * 
+ *
  * @returns {
  *   success: boolean
  *   data?: Comment[]
@@ -98,34 +107,34 @@ export async function POST(req: Request) {
  */
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url)
-    const recipeId = searchParams.get("recipeId")
+    const { searchParams } = new URL(req.url);
+    const recipeId = searchParams.get("recipeId");
 
     if (!recipeId) {
       return NextResponse.json(
         { success: false, error: "Recipe ID is required" },
         { status: 400 }
-      )
+      );
     }
 
     // Add this debug log
-    console.log("Fetching comments for recipe:", recipeId)
+    console.log("Fetching comments for recipe:", recipeId);
 
     // Check if user is admin for including all comments
-    const session = await auth()
-    const isAdmin = session?.user?.role === "ADMIN"
-    
-    const comments = await getRecipeComments(recipeId, isAdmin)
-    
-    // Add this debug log
-    console.log("Found comments:", comments)
+    const session = await auth();
+    const isAdmin = session?.user?.role === "ADMIN";
 
-    return NextResponse.json({ success: true, data: comments })
+    const comments = await getRecipeComments(recipeId, isAdmin);
+
+    // Add this debug log
+    console.log("Found comments:", comments);
+
+    return NextResponse.json({ success: true, data: comments });
   } catch (error) {
-    console.error("[COMMENTS_GET]", error)
+    console.error("[COMMENTS_GET]", error);
     return NextResponse.json(
       { success: false, error: "Internal Server Error" },
       { status: 500 }
-    )
+    );
   }
-} 
+}
