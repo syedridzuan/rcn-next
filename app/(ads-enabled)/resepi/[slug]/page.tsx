@@ -1,30 +1,30 @@
-import { Metadata } from "next"
-import { notFound } from "next/navigation"
-import Image from "next/image"
-import Link from "next/link"
-import { Tag, Clock, Users } from "lucide-react"
-import { Suspense } from "react"
-import { AuthorSpotlight } from '@/components/author-spotlight'
-import { prisma } from "@/lib/db"
-import { absoluteUrl, formatDate, slugify } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { PrintButton } from "@/components/recipes/print-button"
-import { RecipeMetaCards } from "./recipe-meta-cards"
-import { RecipeSections } from "@/components/RecipeSections"
-import { RecipeTips } from "@/components/RecipeTips"
-import { CommentsWrapper } from "@/components/comments/comments-wrapper"
-import { SaveRecipeButton } from "./SaveRecipeButton"
-import { auth } from "@/auth"
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { Tag, Clock, Users } from "lucide-react";
+import { Suspense } from "react";
+import { AuthorSpotlight } from "@/components/author-spotlight";
+import { prisma } from "@/lib/db";
+import { absoluteUrl, formatDate, slugify } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { PrintButton } from "@/components/recipes/print-button";
+import { RecipeMetaCards } from "./recipe-meta-cards";
+import { RecipeSections } from "@/components/RecipeSections";
+import { RecipeTips } from "@/components/RecipeTips";
+import { CommentsWrapper } from "@/components/comments/comments-wrapper";
+import { SaveRecipeButton } from "./SaveRecipeButton";
+import { auth } from "@/auth";
 
 interface PageProps {
   params: {
-    slug: string
-  }
+    slug: string;
+  };
 }
 
 async function getRecipe(slug: string) {
-  const session = await auth()
+  const session = await auth();
 
   const recipe = await prisma.recipe.findUnique({
     where: { slug },
@@ -50,7 +50,7 @@ async function getRecipe(slug: string) {
         select: {
           name: true,
           username: true,
-          recipeCount: true,  // <--- add this
+          recipeCount: true, // <--- add this
           image: true,
           instagramHandle: true,
           facebookHandle: true,
@@ -72,23 +72,27 @@ async function getRecipe(slug: string) {
           }
         : undefined,
     },
-  })
+  });
 
   if (!recipe) {
-    return null
+    return null;
   }
 
-  return recipe
+  return recipe;
 }
 
-export async function generateMetadata({ params }: { params: PageProps["params"] }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: PageProps["params"];
+}): Promise<Metadata> {
   const { slug } = await params;
-  const recipe = await getRecipe(slug)
+  const recipe = await getRecipe(slug);
   if (!recipe) {
-    return { title: "Resepi Tidak Dijumpai" }
+    return { title: "Resepi Tidak Dijumpai" };
   }
 
-  const url = absoluteUrl(`/resepi/${recipe.slug}`)
+  const url = absoluteUrl(`/resepi/${recipe.slug}`);
   return {
     title: `${recipe.title} - Resepi`,
     description: recipe.description ?? "",
@@ -105,7 +109,7 @@ export async function generateMetadata({ params }: { params: PageProps["params"]
       title: recipe.title,
       description: recipe.description ?? "",
     },
-  }
+  };
 }
 
 // Optional difficulty label translations
@@ -114,17 +118,22 @@ const difficultyTranslations: Record<string, string> = {
   MEDIUM: "Sederhana",
   HARD: "Sukar",
   EXPERT: "Pakar",
-}
+};
 
-export default async function ResepePage({ params }: { params: PageProps["params"] }) {
+export default async function ResepePage({
+  params,
+}: {
+  params: PageProps["params"];
+}) {
   const { slug } = await params;
-  const recipe = await getRecipe(slug)
+  const recipe = await getRecipe(slug);
   if (!recipe) {
-    notFound()
+    notFound();
   }
 
   // Get primary or first image
-  const primaryImage = recipe.images.find((img) => img.isPrimary) || recipe.images[0]
+  const primaryImage =
+    recipe.images.find((img) => img.isPrimary) || recipe.images[0];
 
   // Structured Data (for SEO)
   const structuredData = {
@@ -140,7 +149,7 @@ export default async function ResepePage({ params }: { params: PageProps["params
     datePublished: recipe.createdAt?.toISOString(),
     prepTime: `PT${recipe.prepTime}M`,
     cookTime: `PT${recipe.cookTime}M`,
-    totalTime: `PT${(recipe.prepTime + recipe.cookTime) || recipe.totalTime}M`,
+    totalTime: `PT${recipe.prepTime + recipe.cookTime || recipe.totalTime}M`,
     recipeYield: recipe.servings,
     recipeCategory: recipe.category?.name,
     recipeCuisine: "Malaysian",
@@ -158,7 +167,7 @@ export default async function ResepePage({ params }: { params: PageProps["params
             text: it.content,
           }))
         ) || [],
-  }
+  };
 
   return (
     <>
@@ -211,28 +220,28 @@ export default async function ResepePage({ params }: { params: PageProps["params
           )}
 
           <div className="flex flex-col gap-4">
-          {/* Category & Difficulty */}
-          <div className="flex flex-wrap items-center gap-2">
-            {recipe.category && (
-              <>
-                <Link
-                  href={`/kategori/${recipe.category.slug}`}
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  {recipe.category.name}
-                </Link>
-                <span className="text-gray-400">•</span>
-              </>
-            )}
+            {/* Category & Difficulty */}
+            <div className="flex flex-wrap items-center gap-2">
+              {recipe.category && (
+                <>
+                  <Link
+                    href={`/kategori/${recipe.category.slug}`}
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    {recipe.category.name}
+                  </Link>
+                  <span className="text-gray-400">•</span>
+                </>
+              )}
 
-            {/* Updated Difficulty Badge */}
-            <Badge
-              variant="outline"
-              className="text-sm md:text-base font-semibold px-3 py-1 bg-orange-50 text-orange-700 border-orange-200"
-            >
-              {difficultyTranslations[recipe.difficulty] ?? recipe.difficulty}
-            </Badge>
-          </div>
+              {/* Updated Difficulty Badge */}
+              <Badge
+                variant="outline"
+                className="text-sm md:text-base font-semibold px-3 py-1 bg-orange-50 text-orange-700 border-orange-200"
+              >
+                {difficultyTranslations[recipe.difficulty] ?? recipe.difficulty}
+              </Badge>
+            </div>
 
             {/* Title */}
             <h1 className="text-4xl font-bold">{recipe.title}</h1>
@@ -338,18 +347,19 @@ export default async function ResepePage({ params }: { params: PageProps["params
             </section>
           ) : null}
 
-        <AuthorSpotlight user={recipe.user} />
-
-
+          <AuthorSpotlight user={recipe.user} />
 
           {/* Comments */}
           <section className="mt-12">
             <Suspense fallback={<div>Loading comments...</div>}>
-              <CommentsWrapper recipeId={recipe.id} initialComments={recipe.comments} />
+              <CommentsWrapper
+                recipeId={recipe.id}
+                initialComments={recipe.comments}
+              />
             </Suspense>
           </section>
         </div>
       </article>
     </>
-  )
+  );
 }
