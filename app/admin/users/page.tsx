@@ -1,18 +1,15 @@
-import { redirect } from "next/navigation"
-import { auth } from "@/auth"
-import { prisma } from "@/lib/db"
-import { UserActions } from "./user-actions"
-import { Badge } from "@/components/ui/badge"
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
+import { UserActions } from "./user-actions";
+import { Badge } from "@/components/ui/badge";
 
-export const dynamic = "force-dynamic"
-export const revalidate = 0
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 async function getUsers() {
   const users = await prisma.user.findMany({
-    orderBy: [
-      { role: 'asc' },
-      { createdAt: 'desc' }
-    ],
+    orderBy: [{ role: "asc" }, { createdAt: "desc" }],
     select: {
       id: true,
       name: true,
@@ -24,36 +21,39 @@ async function getUsers() {
         select: {
           recipes: true,
           comments: true,
-        }
-      }
-    }
-  })
+        },
+      },
+    },
+  });
 
-  return users
+  return users;
 }
 
-function UserStatusBadge({ status = "ACTIVE" }: { status?: string }) {
+function UserStatusBadge({ status }: { status?: string }) {
+  const safeStatus = status || "ACTIVE";
+
+  // Map your statuses to CSS classes or variants
   const variants: Record<string, string> = {
     ACTIVE: "bg-green-100 text-green-800",
     SUSPENDED: "bg-red-100 text-red-800",
     PENDING: "bg-yellow-100 text-yellow-800",
-  }
+  };
 
   return (
-    <Badge className={variants[status] || "bg-gray-100 text-gray-800"}>
-      {status.toLowerCase()}
+    <Badge className={variants[safeStatus] || "bg-gray-100 text-gray-800"}>
+      {safeStatus.toLowerCase()}
     </Badge>
-  )
+  );
 }
 
 export default async function UsersPage() {
   // Check if user is authenticated and is an admin
-  const session = await auth()
+  const session = await auth();
   if (!session?.user?.role === "ADMIN") {
-    redirect("/")
+    redirect("/");
   }
 
-  const users = await getUsers()
+  const users = await getUsers();
 
   return (
     <div className="container mx-auto py-8 max-w-7xl">
@@ -89,7 +89,9 @@ export default async function UsersPage() {
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>
+                    <Badge
+                      variant={user.role === "ADMIN" ? "default" : "secondary"}
+                    >
                       {user.role.toLowerCase()}
                     </Badge>
                   </td>
@@ -107,7 +109,7 @@ export default async function UsersPage() {
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <UserActions 
+                    <UserActions
                       userId={user.id}
                       currentRole={user.role}
                       currentStatus={user.status}
@@ -120,5 +122,5 @@ export default async function UsersPage() {
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}
