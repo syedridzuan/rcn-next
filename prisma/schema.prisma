@@ -7,8 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -41,13 +39,11 @@ enum ReviewStatus {
   HIDDEN
 }
 
-
 enum Role {
   ADMIN
   USER
   EDITOR
 }
-
 
 enum RecipeSectionType {
   INGREDIENTS
@@ -55,28 +51,29 @@ enum RecipeSectionType {
 }
 
 model User {
-  id            String          @id @default(cuid())
-  name          String?
-  email         String?         @unique
-  emailVerified DateTime?
-  username      String          @unique
-  password      String?
-  image         String?
-  role          Role?
-  status        UserStatus?
+  id              String      @id @default(cuid())
+  name            String?
+  email           String?     @unique
+  emailVerified   DateTime?
+  username        String      @unique
+  password        String?
+  image           String?
+  role            Role?
+  status          UserStatus?
   instagramHandle String?
   facebookHandle  String?
   tiktokHandle    String?
   blogUrl         String?
-  recipeCount     Int            @default(0)
+  recipeCount     Int         @default(0)
 
   // NEW FIELDS: Notification preferences
-  subscribeNewsletter       Boolean @default(true) 
-  subscribeCommentReply     Boolean @default(true)
-  subscribeRecipeComment    Boolean @default(true)
+  subscribeNewsletter    Boolean @default(true)
+  subscribeCommentReply  Boolean @default(true)
+  subscribeRecipeComment Boolean @default(true)
 
   // Relations
   recipes       Recipe[]
+  subscriptions Subscription[]
   comments      Comment[]
   guides        Guide[]
   guideComments GuideComment[]
@@ -84,8 +81,8 @@ model User {
   savedRecipes  SavedRecipe[]
   accounts      Account[]
   sessions      Session[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model Category {
@@ -97,41 +94,40 @@ model Category {
   recipes     Recipe[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  // New field for storing the number of associated recipes directly
-  recipesCount Int       @default(0)
 
+  // New field for storing the number of associated recipes directly
+  recipesCount Int @default(0)
 }
 
 model Recipe {
-  id            String           @id @default(cuid())
-  title         String
-  slug          String           @unique
-  description   String?
-  shortDescription     String?
-  language      String           @default("en")
-  cookTime      Int
-  prepTime      Int
-  totalTime     Int?
-  servings      Int
-  difficulty    RecipeDifficulty @default(EASY)
-  status        RecipeStatus     @default(DRAFT)
-  categoryId    String
-  userId        String
-  category      Category         @relation(fields: [categoryId], references: [id])
-  user          User             @relation(fields: [userId], references: [id])
-  sections      RecipeSection[]
-  images        RecipeImage[]
-  comments      Comment[]
-  tips          RecipeTip[]
-  tags          Tag[]            @relation("RecipesOnTags")
-  isEditorsPick Boolean          @default(false)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  reviews       Review[]
-  avgRating     Float?
-  numReviews    Int              @default(0)
-  savedBy       SavedRecipe[]
+  id               String           @id @default(cuid())
+  title            String
+  slug             String           @unique
+  description      String?
+  shortDescription String?
+  language         String           @default("en")
+  cookTime         Int
+  prepTime         Int
+  totalTime        Int?
+  servings         Int
+  difficulty       RecipeDifficulty @default(EASY)
+  status           RecipeStatus     @default(DRAFT)
+  categoryId       String
+  userId           String
+  category         Category         @relation(fields: [categoryId], references: [id])
+  user             User             @relation(fields: [userId], references: [id])
+  sections         RecipeSection[]
+  images           RecipeImage[]
+  comments         Comment[]
+  tips             RecipeTip[]
+  tags             Tag[]            @relation("RecipesOnTags")
+  isEditorsPick    Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  reviews          Review[]
+  avgRating        Float?
+  numReviews       Int              @default(0)
+  savedBy          SavedRecipe[]
 
   @@index([categoryId])
   @@index([userId])
@@ -171,14 +167,13 @@ model Comment {
   recipe    Recipe        @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
   parentId String?
-  parent   Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
-  replies  Comment[]     @relation("CommentReplies")
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentReplies")
 
   @@index([userId])
   @@index([recipeId])
   @@index([parentId])
 }
-
 
 model RecipeTip {
   id        String   @id @default(cuid())
@@ -339,4 +334,35 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+
+
+model Subscription {
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan              SubscriptionPlan
+  status            SubscriptionStatus @default(ACTIVE)
+  startDate         DateTime           @default(now())
+  currentPeriodEnd  DateTime?
+  cancelAtPeriodEnd Boolean            @default(false)
+  canceledAt        DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([userId])
+}
+
+enum SubscriptionPlan {
+  BASIC
+  STANDARD
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  INCOMPLETE
+  EXPIRED
 }
