@@ -1,50 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-
-// Map your plan name to the corresponding Price ID from Stripe
-// (Replace these placeholders with your actual Price IDs)
-const PRICE_MAP: Record<string, string> = {
-  BASIC: "price_basic_id", // e.g., "price_1AaBbCc..."
-  STANDARD: "price_standard_id",
-  PREMIUM: "price_premium_id",
-};
+import { prisma } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
-    // Expecting JSON body with { plan: 'BASIC' | 'STANDARD' | 'PREMIUM', customerEmail: string }
-    const { plan, customerEmail } = await request.json();
+    const { email } = await request.json();
+    if (!email) {
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    }
 
-    // Validate plan
-    const priceId = PRICE_MAP[plan];
-    if (!priceId) {
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
       return NextResponse.json(
-        { error: "Invalid plan selected" },
-        { status: 400 }
+        { error: "Email already registered, please log in" },
+        { status: 409 }
       );
     }
 
-    // Create a subscription-based Checkout Session
+    // Replace with your own Price ID
+    const BASIC_PRICE_ID = "price_1Qa7OBPEbzb3ZoaowEYUKz2a";
+
+    // Create the Checkout Session
     const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
       payment_method_types: ["card"],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      // Optionally pre-fill the customer's email
-      customer_email: customerEmail,
-      // Update your success & cancel URLs here:
-      success_url: `${request.headers.get("origin")}/langganan/berjaya`,
-      cancel_url: `${request.headers.get("origin")}/langganan/batal`,
+      mode: "subscription",
+      line_items: [{ price: BASIC_PRICE_ID, quantity: 1 }],
+      customer_email: email,
+      metadata: { email },
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/langganan/berjaya`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/langganan/batal`,
     });
 
-    return NextResponse.json({ sessionId: session.id });
-  } catch (error) {
+    // ❗ Return session.url (not just session.id)
+    return NextResponse.json({ url: session.url });
+  } catch (error: any) {
     console.error("Error creating subscription session:", error);
     return NextResponse.json(
-      { error: "Server error while creating session" },
+      { error: "Failed to create subscription session" },
       { status: 500 }
     );
   }

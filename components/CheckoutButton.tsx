@@ -7,31 +7,29 @@ const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 );
 
-interface Item {
-  name: string;
-  price: number; // in cents
-  quantity: number;
-}
-
 interface CheckoutButtonProps {
-  items: Item[];
+  userId: string; // The internal user ID from your DB
 }
 
-export default function CheckoutButton({ items }: CheckoutButtonProps) {
+export default function CheckoutButton({ userId }: CheckoutButtonProps) {
   const [loading, setLoading] = useState(false);
 
   const handleCheckout = async () => {
     setLoading(true);
     try {
-      // 1. Call our /api/checkout route
-      const response = await fetch("/api/checkout", {
+      // 1. Create a subscription session on the server
+      const response = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({
+          // We’ll only pass BASIC as the plan
+          plan: "BASIC",
+          userId,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create checkout session");
+        throw new Error("Failed to create subscription session");
       }
 
       const { sessionId } = await response.json();
@@ -44,7 +42,7 @@ export default function CheckoutButton({ items }: CheckoutButtonProps) {
       await stripe.redirectToCheckout({ sessionId });
     } catch (error) {
       console.error("Error during checkout:", error);
-      // TODO: handle error UI (toast, alert, etc.)
+      alert("Unable to start subscription. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -52,7 +50,7 @@ export default function CheckoutButton({ items }: CheckoutButtonProps) {
 
   return (
     <button onClick={handleCheckout} disabled={loading}>
-      {loading ? "Processing..." : "Checkout"}
+      {loading ? "Processing..." : "Subscribe BASIC Plan"}
     </button>
   );
 }

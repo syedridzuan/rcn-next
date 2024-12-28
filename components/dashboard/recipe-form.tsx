@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm, useFieldArray } from "react-hook-form"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useFieldArray } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -13,19 +13,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { PlusCircle, Trash2 } from "lucide-react"
-import { createRecipe, updateRecipe } from "@/app/dashboard/recipes/actions"
-import { toast } from "sonner"
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { PlusCircle, Trash2 } from "lucide-react";
+import { createRecipe, updateRecipe } from "@/app/admin/recipes/actions";
+import { toast } from "sonner";
 
 //
 // Zod schema
@@ -54,19 +54,19 @@ const recipeSchema = z.object({
   tips: z.array(z.string().min(1, "Tip cannot be empty")).optional(),
   tags: z.array(z.string()).optional(),
   isEditorsPick: z.boolean().optional(),
-})
+});
 
-type RecipeFormData = z.infer<typeof recipeSchema>
+type RecipeFormData = z.infer<typeof recipeSchema>;
 
 interface RecipeFormProps {
-  categories: { id: string; name: string }[]
+  categories: { id: string; name: string }[];
   /**
    * A list of all available tag names from DB (if you want to show them).
    * But with the new single text field approach, you can omit it or keep for reference.
    */
-  tags: string[]
-  initialData?: RecipeFormData
-  recipeId?: string
+  tags: string[];
+  initialData?: RecipeFormData;
+  recipeId?: string;
 }
 
 export function RecipeForm({
@@ -75,8 +75,8 @@ export function RecipeForm({
   initialData,
   recipeId,
 }: RecipeFormProps) {
-  const router = useRouter()
-  const [isPending, setIsPending] = useState(false)
+  const router = useRouter();
+  const [isPending, setIsPending] = useState(false);
 
   // React Hook Form setup
   const form = useForm<RecipeFormData>({
@@ -96,7 +96,7 @@ export function RecipeForm({
       tags: [],
       isEditorsPick: false,
     },
-  })
+  });
 
   //
   // (1) Use a single text box to handle comma-separated tags
@@ -104,7 +104,7 @@ export function RecipeForm({
   //
   const [tagString, setTagString] = useState(
     initialData?.tags?.join(", ") || ""
-  )
+  );
 
   // Field arrays for sections and tips
   const {
@@ -114,7 +114,7 @@ export function RecipeForm({
   } = useFieldArray({
     name: "sections",
     control: form.control,
-  })
+  });
 
   const {
     fields: tips,
@@ -123,7 +123,7 @@ export function RecipeForm({
   } = useFieldArray({
     name: "tips",
     control: form.control,
-  })
+  });
 
   // We don't need a field array for tags anymore,
   // since we're capturing them in tagString.
@@ -133,33 +133,35 @@ export function RecipeForm({
   //
   async function onSubmit(data: RecipeFormData) {
     try {
-      setIsPending(true)
+      setIsPending(true);
 
       // Parse the comma-separated tags from tagString
       const parsedTags = tagString
         .split(",")
         .map((tag) => tag.trim())
-        .filter(Boolean)
+        .filter(Boolean);
 
       // Overwrite the `tags` array with the parsed results
-      data.tags = parsedTags
+      data.tags = parsedTags;
 
       if (recipeId) {
-        const result = await updateRecipe(recipeId, data)
+        const result = await updateRecipe(recipeId, data);
         if (result?.success) {
-          toast.success("Recipe updated successfully")
+          toast.success("Recipe updated successfully");
         }
       } else {
-        const result = await createRecipe(data)
+        const result = await createRecipe(data);
         if (result?.success) {
-          toast.success("Recipe created successfully")
+          toast.success("Recipe created successfully");
         }
       }
 
-      router.push("/dashboard/recipes")
+      router.push("/dashboard/recipes");
     } catch (error) {
-      toast.error(recipeId ? "Failed to update recipe" : "Failed to create recipe")
-      setIsPending(false)
+      toast.error(
+        recipeId ? "Failed to update recipe" : "Failed to create recipe"
+      );
+      setIsPending(false);
     }
   }
 
@@ -167,9 +169,9 @@ export function RecipeForm({
   // Calculate totalTime on-the-fly (prepTime + cookTime)
   // We'll show it read-only in the form
   //
-  const prepVal = form.watch("prepTime")
-  const cookVal = form.watch("cookTime")
-  const totalTime = (Number(prepVal) || 0) + (Number(cookVal) || 0)
+  const prepVal = form.watch("prepTime");
+  const cookVal = form.watch("cookTime");
+  const totalTime = (Number(prepVal) || 0) + (Number(cookVal) || 0);
 
   return (
     <Form {...form}>
@@ -196,7 +198,10 @@ export function RecipeForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
@@ -259,7 +264,10 @@ export function RecipeForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Language</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select language" />
@@ -281,7 +289,10 @@ export function RecipeForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Difficulty</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select difficulty" />
@@ -481,7 +492,7 @@ export function RecipeForm({
         </div>
       </form>
     </Form>
-  )
+  );
 }
 
 //
@@ -492,9 +503,9 @@ function RecipeSection({
   index,
   onRemove,
 }: {
-  form: any
-  index: number
-  onRemove: () => void
+  form: any;
+  index: number;
+  onRemove: () => void;
 }) {
   const {
     fields: items,
@@ -503,7 +514,7 @@ function RecipeSection({
   } = useFieldArray({
     name: `sections.${index}.items`,
     control: form.control,
-  })
+  });
 
   return (
     <div className="border rounded-lg p-4 space-y-4">
@@ -529,7 +540,10 @@ function RecipeSection({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Section Type</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
@@ -594,5 +608,5 @@ function RecipeSection({
         </Button>
       </div>
     </div>
-  )
+  );
 }

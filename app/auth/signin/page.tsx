@@ -3,8 +3,6 @@
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SignInForm } from "@/components/auth/SignInForm";
-
-// shadcn/ui components — adjust import paths as needed
 import {
   Card,
   CardHeader,
@@ -20,7 +18,7 @@ export default function SignInPage() {
   const error = rawError ? decodeURIComponent(rawError) : null;
 
   return (
-    <div className="container flex h-screen w-screen flex-col items-center justify-center">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl">Log Masuk</CardTitle>
@@ -39,11 +37,17 @@ export default function SignInPage() {
         </CardContent>
 
         <CardFooter className="flex items-center justify-between">
-          <Link href="/auth/forgot-password/" className="text-sm underline hover:text-primary">
+          <Link
+            href="/auth/forgot-password/"
+            className="text-sm underline hover:text-primary"
+          >
             Lupa kata laluan?
           </Link>
 
-          <Link href="/register" className="text-sm underline hover:text-primary">
+          <Link
+            href="/register"
+            className="text-sm underline hover:text-primary"
+          >
             Daftar akaun baharu
           </Link>
         </CardFooter>

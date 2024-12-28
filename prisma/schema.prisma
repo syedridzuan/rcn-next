@@ -53,9 +53,9 @@ enum RecipeSectionType {
 model User {
   id              String      @id @default(cuid())
   name            String?
-  email           String?     @unique
+  email           String     @unique
   emailVerified   DateTime?
-  username        String      @unique
+  username        String ?     @unique
   password        String?
   image           String?
   role            Role?
@@ -336,20 +336,23 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-
-
 model Subscription {
-  id                String             @id @default(cuid())
-  userId            String
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan              SubscriptionPlan
-  status            SubscriptionStatus @default(ACTIVE)
-  startDate         DateTime           @default(now())
-  currentPeriodEnd  DateTime?
-  cancelAtPeriodEnd Boolean            @default(false)
-  canceledAt        DateTime?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  id                   String                @id @default(cuid())
+  userId               String
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                 SubscriptionPlan
+  status               SubscriptionStatus    @default(ACTIVE)
+  startDate            DateTime              @default(now())
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean               @default(false)
+  canceledAt           DateTime?
+  stripeSubscriptionId String?
+  interval             SubscriptionInterval?
+  trialEnd             DateTime?
+  metadata             Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }
@@ -365,4 +368,9 @@ enum SubscriptionStatus {
   CANCELLED
   INCOMPLETE
   EXPIRED
+}
+
+enum SubscriptionInterval {
+  MONTHLY
+  YEARLY
 }

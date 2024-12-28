@@ -1,170 +1,131 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 
-// Extend the interface to capture any potential error messages
-interface SubscriptionInfo {
-  plan: string; // e.g., "BASIC" | "STANDARD" | "PREMIUM"
-  status: string; // e.g., "ACTIVE" | "CANCELLED" | etc.
-  currentPeriodEnd: string | null;
-}
-
-// Optionally define an error interface if you want to store errors in state
-interface SubscriptionError {
-  message: string;
+// Example subscription interface
+interface SubscriptionData {
+  plan: string; // e.g., "BASIC"
+  status: string; // e.g., "ACTIVE", "CANCELLED", etc.
+  startDate: string; // ISO date string
+  currentPeriodEnd?: string; // ISO date string (nullable)
 }
 
 export function SubscriptionDashboard() {
-  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(
+  const [subscription, setSubscription] = useState<SubscriptionData | null>(
     null
   );
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<SubscriptionError | null>(null);
-  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchSubscription() {
-      try {
-        setLoading(true);
-        setError(null); // clear any previous errors
-
-        // Fetch the user’s subscription from your API route
-        const res = await fetch("/api/subscriptions", { method: "GET" });
-        if (!res.ok) {
-          throw new Error(`Failed to fetch subscription info: ${res.status}`);
-        }
-
-        // Your server might return { subscription: {...} }
-        // Adjust as needed based on how your API actually responds
-        const data = await res.json();
-
-        // Suppose your API responds with { subscription: SubscriptionInfo | null }
-        if (!data || !data.subscription) {
-          // No subscription found
-          setSubscription(null);
-        } else {
-          setSubscription(data.subscription);
-        }
-      } catch (err: any) {
-        console.error("Error fetching subscription:", err);
-        setError({ message: err.message || "Unknown error occurred." });
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchSubscription();
+    // 1. Fetch subscription from your backend
+    // Adjust the endpoint to your actual API (e.g., "/api/subscriptions" or similar)
+    fetch("/api/subscriptions")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load subscription data");
+        return res.json();
+      })
+      .then((data) => {
+        // data.subscription might be null if no subscription found
+        setSubscription(data.subscription || null);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError("Ralat semasa memuatkan data langganan.");
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return <p>Loading your subscription details...</p>;
-  }
-
-  if (error) {
-    return (
-      <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded">
-        <p>Error: {error.message}</p>
-      </div>
-    );
-  }
-
-  // If no subscription was found, show a "no subscription" UI
-  if (!subscription) {
-    return (
-      <div className="p-4 bg-white rounded shadow space-y-4">
-        <p className="text-gray-600">
-          You currently have no active subscription.
-        </p>
-        <button
-          onClick={() => {
-            // Perhaps redirect them to a "choose plan" page
-            router.push("/pricing"); // or /plans, etc.
-          }}
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          Subscribe Now
-        </button>
-      </div>
-    );
-  }
-
-  // Otherwise, we have a subscription object with plan & status
-  const { plan, status, currentPeriodEnd } = subscription;
-
-  // Example upgrade logic: if plan is BASIC or STANDARD, you might want to show a button to upgrade
-  // Adjust as needed for your real plan logic
-  const showUpgradeButton = plan === "BASIC" || plan === "STANDARD";
-  const canCancel = status === "ACTIVE";
-
-  async function handleUpgrade() {
+  const handleCancelSubscription = async () => {
+    // 2. Call API to cancel subscription
     try {
-      // Example: call an API route that changes the user’s plan
-      // e.g. /api/subscriptions/change-plan?newPlan=PREMIUM
-      const res = await fetch("/api/subscriptions/change-plan", {
+      const resp = await fetch("/api/subscriptions/cancel", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newPlan: "PREMIUM" }),
       });
-      if (!res.ok) {
-        throw new Error("Upgrade failed");
+      if (!resp.ok) {
+        throw new Error("Gagal membatalkan langganan.");
       }
 
-      // Optionally refresh the subscription or show a success message
-      alert("Upgrade successful. Enjoy your PREMIUM plan!");
-      router.refresh();
-    } catch (err: any) {
-      alert(`Error upgrading: ${err.message}`);
-    }
-  }
-
-  const handleCancelSubscription = async () => {
-    try {
-      const resp = await fetch("/api/subscriptions/cancel", { method: "POST" });
-      if (!resp.ok) throw new Error("Failed to cancel subscription");
-
-      alert("Subscription cancelled successfully.");
-      // Manually update the subscription to reflect "no subscription"
-      setSubscription(null);
-      // Or setSubscription({...subscription, status: "CANCELLED"});
+      // Optionally, refresh data or update state
+      setSubscription((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "CANCELLED",
+            }
+          : prev
+      );
+      alert("Langganan anda telah dibatalkan.");
     } catch (error) {
       console.error(error);
-      alert("An error occurred during cancellation.");
+      alert("Ralat semasa membatalkan langganan.");
     }
   };
 
+  // 3. Loading state
+  if (loading) {
+    return <p>Sedang memuatkan data langganan...</p>;
+  }
+
+  // 4. Error state
+  if (error) {
+    return <p style={{ color: "red" }}>{error}</p>;
+  }
+
+  // 5. No subscription fallback
+  if (!subscription) {
+    return (
+      <div className="bg-white p-4 rounded shadow">
+        <p>Anda belum mempunyai langganan.</p>
+        <p className="mt-2 text-sm text-gray-600">
+          Sila pergi ke halaman <strong>Langganan</strong> untuk melanggan pelan
+          BASIC.
+        </p>
+      </div>
+    );
+  }
+
+  // 6. Display subscription details
+  const { plan, status, startDate, currentPeriodEnd } = subscription;
+
+  const formattedStartDate = new Date(startDate).toLocaleDateString("ms-MY", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const formattedPeriodEnd = currentPeriodEnd
+    ? new Date(currentPeriodEnd).toLocaleDateString("ms-MY", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
+
   return (
-    <div className="space-y-4">
-      <div className="bg-white p-4 rounded shadow space-y-2">
-        <p className="text-sm text-gray-600">Plan: {plan}</p>
-        <p className="text-sm text-gray-600">Status: {status}</p>
-        {currentPeriodEnd && (
-          <p className="text-sm text-gray-600">
-            Next Billing Date: {currentPeriodEnd}
-          </p>
-        )}
-      </div>
+    <div className="bg-white p-4 rounded shadow space-y-2">
+      <p className="text-sm text-gray-600">
+        <strong>Pelan:</strong> {plan}
+      </p>
+      <p className="text-sm text-gray-600">
+        <strong>Status:</strong> {status}
+      </p>
+      <p className="text-sm text-gray-600">
+        <strong>Tarikh Mula:</strong> {formattedStartDate}
+      </p>
+      {formattedPeriodEnd && (
+        <p className="text-sm text-gray-600">
+          <strong>Tarikh Pembaharuan:</strong> {formattedPeriodEnd}
+        </p>
+      )}
 
-      {/* Show dynamic actions based on plan & status */}
-      <div className="flex gap-4">
-        {showUpgradeButton && (
-          <button
-            onClick={handleUpgrade}
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-          >
-            Upgrade to PREMIUM
-          </button>
-        )}
-
-        {canCancel && (
-          <button
-            onClick={handleCancelSubscription}
-            className="px-4 py-2 bg-red-500 text-white rounded"
-          >
-            Cancel Subscription
-          </button>
-        )}
-      </div>
+      {status === "ACTIVE" && (
+        <button
+          className="mt-2 px-4 py-2 bg-red-500 text-white rounded"
+          onClick={handleCancelSubscription}
+        >
+          Batalkan Langganan
+        </button>
+      )}
     </div>
   );
 }
