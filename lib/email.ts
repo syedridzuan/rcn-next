@@ -24,6 +24,9 @@ export async function sendEmail({
   console.log("  region:", process.env.AWS_SES_REGION_NAME);
   console.log("  fromEmail:", process.env.AWS_SES_FROM_EMAIL);
 
+  // Set a friendly "From" name, e.g. "Resepi Che Nom"
+  const friendlyFrom = `Resepi Che Nom <${process.env.AWS_SES_FROM_EMAIL}>`;
+
   // Configure SES with your environment variables
   const ses = new SESClient({
     region: process.env.AWS_SES_REGION_NAME!,
@@ -38,7 +41,7 @@ export async function sendEmail({
   });
 
   const command = new SendEmailCommand({
-    Source: process.env.AWS_SES_FROM_EMAIL!, // “from” address from your .env
+    Source: friendlyFrom, // Use friendlyFrom instead of just AWS_SES_FROM_EMAIL
     Destination: {
       ToAddresses: [to],
     },
@@ -141,6 +144,11 @@ export async function sendPaymentConfirmationEmail(email: string) {
   });
 }
 
+/**
+ * Sends an email when a user's subscription is reactivated.
+ *
+ * @param email - The recipient’s email address
+ */
 export async function sendReSubSuccessEmail(email: string) {
   console.log("Calling sendReSubSuccessEmail for:", email);
 
@@ -158,14 +166,63 @@ export async function sendReSubSuccessEmail(email: string) {
   });
 }
 
+/**
+ * Sends an email notifying the user they've begun the process to re-subscribe.
+ *
+ * @param email - The recipient’s email address
+ */
 export async function sendReSubInitiatedEmail(email: string) {
   console.log("Calling sendReSubInitiatedEmail for:", email);
 
   const subject = "Langganan Anda Sedang Diproses";
   const html = `
-    <h1>Langganan Bermula</h1>
+    <h1>Proses Langganan Bermula</h1>
     <p>Anda telah memulakan proses langganan semula. Sila lengkapkan pembayaran melalui pautan yang disediakan.</p>
     <p>Kami akan menghantar e-mel pengesahan selepas pembayaran anda berjaya.</p>
+  `;
+
+  await sendEmail({
+    to: email,
+    subject,
+    html,
+  });
+}
+
+/**
+ * Sends an email notifying the user they've successfully undone the scheduled cancellation.
+ *
+ * @param email - The recipient’s email address
+ */
+export async function sendUncancelConfirmationEmail(email: string) {
+  console.log("Calling sendUncancelConfirmationEmail for:", email);
+
+  const subject = "Langganan Anda Akan Diteruskan Semula!";
+  const html = `
+    <h1>Pembatalan Telah Dibatalkan</h1>
+    <p>Anda telah membatalkan pembatalan langganan anda. Kami gembira anda terus bersama kami!</p>
+    <p>Langganan anda akan kekal aktif seperti biasa.</p>
+  `;
+
+  await sendEmail({
+    to: email,
+    subject,
+    html,
+  });
+}
+
+/**
+ * Sends an email notifying the user that their subscription is scheduled to cancel.
+ *
+ * @param email - The recipient’s email address
+ */
+export async function sendCancelScheduledEmail(email: string) {
+  console.log("Calling sendCancelScheduledEmail for:", email);
+
+  const subject = "Pembatalan Langganan Dijadualkan";
+  const html = `
+    <h1>Langganan Anda Akan Tamat</h1>
+    <p>Anda telah menjadualkan pembatalan langganan pada akhir kitaran semasa.</p>
+    <p>Anda masih boleh membatalkan pembatalan sebelum tarikh tamat, jika anda berubah fikiran.</p>
   `;
 
   await sendEmail({

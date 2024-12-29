@@ -90,8 +90,12 @@ export default async function HomePage() {
     <div className="container mx-auto px-4 py-8">
       {/* Hero Section */}
       <section className="text-center py-20 bg-gradient-to-r from-orange-100 to-yellow-100 rounded-lg mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">Selamat Datang ke Dunia Resipi Kami</h1>
-        <p className="text-xl mb-8">Temui resipi lazat dan panduan memasak yang akan menggembirakan deria rasa anda.</p>
+        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+          Resepi Teruji, Masak dengan Yakin bersama Che Nom
+        </h1>
+        <p className="text-xl mb-8">
+          Cipta hidangan terbaik dengan resepi berkualiti yang pasti menjadi.
+        </p>
         <Button size="lg">Terokai Resipi</Button>
       </section>
 
@@ -120,10 +124,16 @@ export default async function HomePage() {
                     </div>
                   )}
                   <div className="p-6">
-                    <h3 className="font-semibold text-xl mb-2 group-hover:text-orange-600 transition-colors duration-300">{recipe.title}</h3>
-                    <p className="text-gray-600 text-sm mb-4">{recipe.shortDescription}</p>
+                    <h3 className="font-semibold text-xl mb-2 group-hover:text-orange-600 transition-colors duration-300">
+                      {recipe.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-4">
+                      {recipe.shortDescription}
+                    </p>
                     <div className="flex items-center justify-between text-sm text-gray-500">
-                      <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded">{recipe.category.name}</span>
+                      <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                        {recipe.category.name}
+                      </span>
                       <span>{recipe.cookTime + recipe.prepTime} minit</span>
                     </div>
                   </div>
@@ -156,10 +166,16 @@ export default async function HomePage() {
                   </div>
                 )}
                 <div className="p-6">
-                  <h3 className="font-semibold text-xl mb-2 group-hover:text-orange-600 transition-colors duration-300">{recipe.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4">{recipe.shortDescription}</p>
+                  <h3 className="font-semibold text-xl mb-2 group-hover:text-orange-600 transition-colors duration-300">
+                    {recipe.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    {recipe.shortDescription}
+                  </p>
                   <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded">{recipe.category.name}</span>
+                    <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                      {recipe.category.name}
+                    </span>
                     <span>{recipe.cookTime + recipe.prepTime} minit</span>
                   </div>
                 </div>
@@ -171,8 +187,12 @@ export default async function HomePage() {
 
       {/* Newsletter Section */}
       <section className="bg-orange-100 rounded-lg p-8 mb-16">
-        <h2 className="text-3xl font-bold mb-4 text-center">Langgan Surat Berita Kami</h2>
-        <p className="text-center mb-6">Dapatkan resipi terbaru dan panduan memasak terus ke peti masuk anda!</p>
+        <h2 className="text-3xl font-bold mb-4 text-center">
+          Langgan Surat Berita Kami
+        </h2>
+        <p className="text-center mb-6">
+          Dapatkan resipi terbaru dan panduan memasak terus ke peti masuk anda!
+        </p>
         <NewsletterForm />
       </section>
 
