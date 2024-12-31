@@ -7,3 +7,16 @@ export function generateSlug(title: string): string {
     .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
     .trim();
 }
+
+// Overloaded or optional config
+export function formatDate(date: Date, options?: { time?: boolean }): string {
+  // E.g., if not provided, default is false => no time
+  const showTime = options?.time ?? false;
+
+  return new Intl.DateTimeFormat("ms-MY", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    ...(showTime && { hour: "numeric", minute: "numeric" }),
+  }).format(date);
+}

@@ -1,32 +1,34 @@
+// app/(main)/(ads-enabled)/resepi/[slug]/page.tsx
+
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Tag, Clock, Users } from "lucide-react";
+import { Tag, Eye as EyeIcon } from "lucide-react";
 import { Suspense } from "react";
-import { AuthorSpotlight } from "@/components/author-spotlight";
 import { prisma } from "@/lib/db";
-import { absoluteUrl, formatDate, slugify } from "@/lib/utils";
+import { absoluteUrl, formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PrintButton } from "@/components/recipes/print-button";
 import { RecipeMetaCards } from "./recipe-meta-cards";
 import { RecipeSections } from "@/components/RecipeSections";
 import { RecipeTips } from "@/components/RecipeTips";
 import { CommentsWrapper } from "@/components/comments/comments-wrapper";
+import { AuthorSpotlight } from "@/components/author-spotlight";
+import { LikeButtonRecipe } from "./LikeButtonRecipe";
 import { SaveRecipeButton } from "./SaveRecipeButton";
+import { incrementRecipeView } from "@/lib/incrementViews";
+import { hasActiveSubscription } from "@/lib/subscription";
 import { auth } from "@/auth";
 
-interface PageProps {
-  params: {
-    slug: string;
-  };
-}
+import type { ServingType, RecipeDifficulty } from "@prisma/client";
 
+type PageParams = { slug: string };
+
+// A helper to load the recipe from the DB
 async function getRecipe(slug: string) {
   const session = await auth();
-
-  const recipe = await prisma.recipe.findUnique({
+  return prisma.recipe.findUnique({
     where: { slug },
     include: {
       sections: {
@@ -34,15 +36,13 @@ async function getRecipe(slug: string) {
         orderBy: { id: "asc" },
       },
       tips: true,
+      images: true,
+      category: true,
+      tags: true,
       comments: {
         where: { status: "APPROVED" },
         include: {
-          user: {
-            select: {
-              name: true,
-              image: true,
-            },
-          },
+          user: { select: { name: true, image: true } },
         },
         orderBy: { createdAt: "desc" },
       },
@@ -50,7 +50,7 @@ async function getRecipe(slug: string) {
         select: {
           name: true,
           username: true,
-          recipeCount: true, // <--- add this
+          recipeCount: true,
           image: true,
           instagramHandle: true,
           facebookHandle: true,
@@ -58,12 +58,10 @@ async function getRecipe(slug: string) {
           blogUrl: true,
         },
       },
-      category: true,
       _count: {
         select: { comments: true },
       },
-      images: true,
-      tags: true,
+      // Pull the "saved" record if logged in
       savedBy: session?.user?.id
         ? {
             where: { userId: session.user.id },
@@ -73,26 +71,29 @@ async function getRecipe(slug: string) {
         : undefined,
     },
   });
-
-  if (!recipe) {
-    return null;
-  }
-
-  return recipe;
 }
 
+// A small map for your difficulty enum
+const difficultyTranslations: Record<RecipeDifficulty, string> = {
+  EASY: "Mudah",
+  MEDIUM: "Sederhana",
+  HARD: "Sukar",
+  EXPERT: "Pakar",
+};
+
 export async function generateMetadata({
-  params,
+  params: asyncParams,
 }: {
-  params: PageProps["params"];
+  params: Promise<PageParams>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug } = await asyncParams;
   const recipe = await getRecipe(slug);
   if (!recipe) {
     return { title: "Resepi Tidak Dijumpai" };
   }
 
   const url = absoluteUrl(`/resepi/${recipe.slug}`);
+
   return {
     title: `${recipe.title} - Resepi`,
     description: recipe.description ?? "",
@@ -101,7 +102,7 @@ export async function generateMetadata({
       description: recipe.description ?? "",
       type: "article",
       url,
-      images: recipe.image ? [recipe.image] : [],
+      images: recipe.images?.[0]?.url ? [recipe.images[0].url] : [],
       locale: "ms_MY",
     },
     twitter: {
@@ -112,30 +113,84 @@ export async function generateMetadata({
   };
 }
 
-// Optional difficulty label translations
-const difficultyTranslations: Record<string, string> = {
-  EASY: "Mudah",
-  MEDIUM: "Sederhana",
-  HARD: "Sukar",
-  EXPERT: "Pakar",
-};
-
 export default async function ResepePage({
-  params,
+  params: asyncParams,
 }: {
-  params: PageProps["params"];
+  params: Promise<PageParams>;
 }) {
-  const { slug } = await params;
+  // 1) Await the dynamic route param
+  const { slug } = await asyncParams;
+
+  // 2) Load the recipe
   const recipe = await getRecipe(slug);
   if (!recipe) {
     notFound();
   }
 
-  // Get primary or first image
+  // 3) Check subscription
+  const session = await auth();
+  let isSubscribed = false;
+  if (session?.user?.id) {
+    isSubscribed = await hasActiveSubscription(session.user.id);
+  }
+
+  // 4) increment view count
+  await incrementRecipeView(recipe.id);
+
+  // --------------------------------------------
+  // LOGIC: prefer any openaiXxxTimeText if present
+  // --------------------------------------------
+  const finalPrepTimeText =
+    recipe.openaiPrepTimeText?.trim() || // 1. if we have openaiPrepTimeText
+    (typeof recipe.openaiPrepTime === "number"
+      ? `${recipe.openaiPrepTime} min`
+      : // fallback to old prepTime if openai is null
+      recipe.prepTime
+      ? `${recipe.prepTime} min`
+      : "");
+
+  const finalCookTimeText =
+    recipe.openaiCookTimeText?.trim() ||
+    (typeof recipe.openaiCookTime === "number"
+      ? `${recipe.openaiCookTime} min`
+      : recipe.cookTime
+      ? `${recipe.cookTime} min`
+      : "");
+
+  const finalTotalTimeText =
+    recipe.openaiTotalTimeText?.trim() ||
+    (typeof recipe.openaiTotalTime === "number"
+      ? `${recipe.openaiTotalTime} min`
+      : recipe.totalTime
+      ? `${recipe.totalTime} min`
+      : "N/A");
+  console.log("Final total time text:", finalTotalTimeText);
+
+  // We'll also pass numeric fallback for the meta cards
+  const finalPrepTimeNum =
+    typeof recipe.openaiPrepTime === "number"
+      ? recipe.openaiPrepTime
+      : recipe.prepTime ?? null;
+
+  const finalCookTimeNum =
+    typeof recipe.openaiCookTime === "number"
+      ? recipe.openaiCookTime
+      : recipe.cookTime ?? null;
+
+  const finalTotalTimeNum =
+    typeof recipe.openaiTotalTime === "number"
+      ? recipe.openaiTotalTime
+      : recipe.totalTime ?? null;
+
+  const finalDifficulty = recipe.openaiDifficulty ?? recipe.difficulty;
+  const finalServings = recipe.openaiServings ?? recipe.servings;
+  const finalServingType: ServingType = recipe.openaiServingType ?? "PEOPLE";
+
+  // Grab the first (primary) image
   const primaryImage =
     recipe.images.find((img) => img.isPrimary) || recipe.images[0];
 
-  // Structured Data (for SEO)
+  // JSON-LD data for SEO
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Recipe",
@@ -147,10 +202,11 @@ export default async function ResepePage({
       name: recipe.user?.name || "Anonymous",
     },
     datePublished: recipe.createdAt?.toISOString(),
-    prepTime: `PT${recipe.prepTime}M`,
-    cookTime: `PT${recipe.cookTime}M`,
-    totalTime: `PT${recipe.prepTime + recipe.cookTime || recipe.totalTime}M`,
-    recipeYield: recipe.servings,
+    // for SEO, we just store numeric minutes if we have them
+    prepTime: finalPrepTimeNum ? `PT${finalPrepTimeNum}M` : undefined,
+    cookTime: finalCookTimeNum ? `PT${finalCookTimeNum}M` : undefined,
+    totalTime: finalTotalTimeNum ? `PT${finalTotalTimeNum}M` : undefined,
+    recipeYield: finalServings,
     recipeCategory: recipe.category?.name,
     recipeCuisine: "Malaysian",
     recipeIngredient:
@@ -173,14 +229,11 @@ export default async function ResepePage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(structuredData),
-        }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-
       <article className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* -- Hero / Header -- */}
         <header className="mb-8">
+          {/* Image */}
           {primaryImage && (
             <div className="relative aspect-video rounded-lg overflow-hidden mb-6">
               <Image
@@ -197,30 +250,8 @@ export default async function ResepePage({
             </div>
           )}
 
-          {/* Optional: Gallery */}
-          {recipe.images.length > 1 && (
-            <div className="grid grid-cols-4 gap-2 mb-6">
-              {recipe.images.map((image) => (
-                <div
-                  key={image.id}
-                  className={`relative aspect-square rounded-lg overflow-hidden ${
-                    image.isPrimary ? "ring-2 ring-orange-500" : ""
-                  }`}
-                >
-                  <Image
-                    src={image.url}
-                    alt={image.alt || recipe.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 25vw, 20vw"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
+          {/* Title & Difficulty */}
           <div className="flex flex-col gap-4">
-            {/* Category & Difficulty */}
             <div className="flex flex-wrap items-center gap-2">
               {recipe.category && (
                 <>
@@ -233,20 +264,15 @@ export default async function ResepePage({
                   <span className="text-gray-400">•</span>
                 </>
               )}
-
-              {/* Updated Difficulty Badge */}
               <Badge
                 variant="outline"
                 className="text-sm md:text-base font-semibold px-3 py-1 bg-orange-50 text-orange-700 border-orange-200"
               >
-                {difficultyTranslations[recipe.difficulty] ?? recipe.difficulty}
+                {difficultyTranslations[finalDifficulty]}
               </Badge>
             </div>
 
-            {/* Title */}
             <h1 className="text-4xl font-bold">{recipe.title}</h1>
-
-            {/* Description */}
             {recipe.description && (
               <div
                 className="text-gray-600 text-lg"
@@ -258,7 +284,6 @@ export default async function ResepePage({
 
             {/* Author & Buttons */}
             <div className="flex items-center justify-between flex-wrap gap-4">
-              {/* Author */}
               <div className="flex items-center gap-2">
                 {recipe.user?.image && (
                   <Image
@@ -275,43 +300,48 @@ export default async function ResepePage({
                 </div>
               </div>
 
-              {/* Save & Print Buttons */}
               <div className="flex gap-2">
+                <LikeButtonRecipe recipeId={recipe.id} />
                 <SaveRecipeButton
                   recipeId={recipe.id}
                   savedRecipeId={recipe.savedBy?.[0]?.id}
                   existingNote={recipe.savedBy?.[0]?.notes}
+                  isSubscribed={isSubscribed}
                 />
                 <PrintButton label="Cetak Resepi" />
               </div>
             </div>
 
-            {/* Publish Date */}
-            <div className="text-sm text-gray-500">
-              Diterbitkan pada {formatDate(recipe.createdAt)}
+            {/* Date + Views */}
+            <div className="flex items-center gap-8 text-base text-gray-600 mt-2 font-medium">
+              <span>
+                Diterbitkan pada {formatDate(recipe.createdAt, { time: false })}
+              </span>
+              {typeof recipe.viewCount === "number" && (
+                <span className="flex items-center gap-1">
+                  <EyeIcon className="h-4 w-4 text-gray-500" />
+                  {recipe.viewCount} paparan
+                </span>
+              )}
             </div>
           </div>
         </header>
 
-        {/* -- Meta Info (Time, Servings, etc.) -- */}
+        {/* Meta Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <RecipeMetaCards
-            prepTime={recipe.prepTime}
-            cookTime={recipe.cookTime}
-            totalTime={recipe.totalTime}
-            servings={recipe.servings}
-            labels={{
-              prepTime: "Masa Penyediaan",
-              cookTime: "Masa Memasak",
-              totalTime: "Jumlah Masa",
-              servings: "Hidangan",
-              minutes: "minit",
-              people: "orang",
-            }}
+            prepTime={finalPrepTimeNum}
+            prepTimeText={finalPrepTimeText}
+            cookTime={finalCookTimeNum}
+            cookTimeText={finalCookTimeText}
+            totalTime={finalTotalTimeNum}
+            totalTimeText={finalTotalTimeText} // ← NEW PROP
+            servings={finalServings}
+            servingType={finalServingType}
           />
         </div>
 
-        {/* -- Tags -- */}
+        {/* Tag listing */}
         {recipe.tags?.length ? (
           <div className="mb-8">
             <div className="flex flex-wrap gap-2">
@@ -329,7 +359,6 @@ export default async function ResepePage({
           </div>
         ) : null}
 
-        {/* -- Recipe Content -- */}
         <div className="space-y-8">
           {/* Ingredients & Instructions */}
           <RecipeSections
@@ -347,6 +376,7 @@ export default async function ResepePage({
             </section>
           ) : null}
 
+          {/* Author */}
           <AuthorSpotlight user={recipe.user} />
 
           {/* Comments */}

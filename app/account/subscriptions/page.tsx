@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { SubscriptionDashboard } from "@/components/SubscriptionDashboard.tsx";
+import { SubscriptionDashboard } from "@/components/SubscriptionDashboard";
 
 export const metadata: Metadata = {
   title: "Langganan Anda | MyApp",

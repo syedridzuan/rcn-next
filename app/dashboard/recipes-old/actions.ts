@@ -1,42 +1,42 @@
-'use server'
+"use server";
 
-import { prisma } from '@/lib/db'
-import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
-import { slugify } from '@/lib/utils'
-import { auth } from '@/auth'
-import { RecipeFormData } from '@/types/recipe'
+import { prisma } from "@/lib/db";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { slugify } from "@/lib/utils";
+import { auth } from "@/auth";
+import { RecipeFormData } from "@/types/recipe";
 
 export async function createRecipe(data: RecipeFormData) {
   try {
     // 1. Validate input data
     if (!data || !data.title) {
-      throw new Error("Recipe data is required")
+      throw new Error("Recipe data is required");
     }
 
     // 2. Get authenticated session
-    const session = await auth()
+    const session = await auth();
     if (!session || !session.user || !session.user.id) {
-      throw new Error('Unauthorized: You must be logged in to create a recipe')
+      throw new Error("Unauthorized: You must be logged in to create a recipe");
     }
 
     // 3. Generate and validate slug
-    const slug = slugify(data.title)
+    const slug = slugify(data.title);
     const existingRecipe = await prisma.recipe.findUnique({
-      where: { slug }
-    })
+      where: { slug },
+    });
 
     if (existingRecipe) {
-      throw new Error('A recipe with this title already exists')
+      throw new Error("A recipe with this title already exists");
     }
 
     // 4. Create the recipe with all its relations
-    console.log('Creating recipe:', data)
-    
+    console.log("Creating recipe:", data);
+
     const recipe = await prisma.recipe.create({
       data: {
         title: data.title,
-        description: data.description || '',
+        description: data.description || "",
         language: data.language,
         cookTime: data.cookTime,
         prepTime: data.prepTime,
@@ -46,48 +46,48 @@ export async function createRecipe(data: RecipeFormData) {
         categoryId: data.categoryId,
         userId: session.user.id,
         sections: {
-          create: data.sections.map(section => ({
+          create: data.sections.map((section) => ({
             title: section.title,
             type: section.type,
             items: {
-              create: section.items.map(item => ({
-                content: item.content
-              }))
-            }
-          }))
-        }
+              create: section.items.map((item) => ({
+                content: item.content,
+              })),
+            },
+          })),
+        },
       },
       include: {
         sections: {
           include: {
-            items: true
-          }
-        }
-      }
-    })
+            items: true,
+          },
+        },
+      },
+    });
 
     // 5. Revalidate and redirect on success
     if (recipe) {
-      console.log('Recipe created successfully:', recipe)
-      revalidatePath('/dashboard/recipes')
-      return { success: true, recipe }
+      console.log("Recipe created successfully:", recipe);
+      revalidatePath("/admin/recipes");
+      return { success: true, recipe };
     }
 
-    throw new Error('Failed to create recipe')
+    throw new Error("Failed to create recipe");
   } catch (error) {
-    console.error('[CREATE_RECIPE_ERROR]', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to create recipe'
-    }
+    console.error("[CREATE_RECIPE_ERROR]", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create recipe",
+    };
   }
 }
 
 export async function updateRecipe(id: string, data: RecipeFormData) {
   try {
-    const session = await auth()
+    const session = await auth();
     if (!session?.user?.id) {
-      throw new Error('Unauthorized: You must be logged in to update a recipe')
+      throw new Error("Unauthorized: You must be logged in to update a recipe");
     }
 
     // Delete existing sections and items
@@ -95,22 +95,22 @@ export async function updateRecipe(id: string, data: RecipeFormData) {
       prisma.recipeItem.deleteMany({
         where: {
           section: {
-            recipeId: id
-          }
-        }
+            recipeId: id,
+          },
+        },
       }),
       prisma.recipeSection.deleteMany({
         where: {
-          recipeId: id
-        }
-      })
-    ])
+          recipeId: id,
+        },
+      }),
+    ]);
 
     // Update recipe with new data
     const recipe = await prisma.recipe.update({
-      where: { 
+      where: {
         id,
-        userId: session.user.id
+        userId: session.user.id,
       },
       data: {
         title: data.title,
@@ -122,51 +122,51 @@ export async function updateRecipe(id: string, data: RecipeFormData) {
         difficulty: data.difficulty,
         categoryId: data.categoryId,
         sections: {
-          create: data.sections.map(section => ({
+          create: data.sections.map((section) => ({
             title: section.title,
             type: section.type,
             items: {
-              create: section.items.map(item => ({
-                content: item.content
-              }))
-            }
-          }))
-        }
-      }
-    })
+              create: section.items.map((item) => ({
+                content: item.content,
+              })),
+            },
+          })),
+        },
+      },
+    });
 
-    revalidatePath('/dashboard/recipes')
-    return { success: true, recipe }
+    revalidatePath("/admin/recipes");
+    return { success: true, recipe };
   } catch (error) {
-    console.error('[UPDATE_RECIPE_ERROR]', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to update recipe'
-    }
+    console.error("[UPDATE_RECIPE_ERROR]", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to update recipe",
+    };
   }
 }
 
 export async function deleteRecipe(id: string) {
   try {
-    const session = await auth()
+    const session = await auth();
     if (!session?.user?.id) {
-      throw new Error('Unauthorized: You must be logged in to delete a recipe')
+      throw new Error("Unauthorized: You must be logged in to delete a recipe");
     }
 
     await prisma.recipe.delete({
-      where: { 
+      where: {
         id,
-        userId: session.user.id
-      }
-    })
-    
-    revalidatePath('/dashboard/recipes')
-    return { success: true }
+        userId: session.user.id,
+      },
+    });
+
+    revalidatePath("/admin/recipes");
+    return { success: true };
   } catch (error) {
-    console.error('[DELETE_RECIPE_ERROR]', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to delete recipe'
-    }
+    console.error("[DELETE_RECIPE_ERROR]", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to delete recipe",
+    };
   }
-} 
+}

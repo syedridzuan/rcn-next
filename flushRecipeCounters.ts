@@ -1,49 +1,62 @@
-// example: flushRecipeCounters.ts
+#!/usr/bin/env tsx
+import "dotenv/config";
 import { prisma } from "@/lib/db";
 import { redisClient } from "@/lib/redis";
 
+/**
+ * Flush recipe view counters from Redis into your Prisma database.
+ */
 export async function flushRecipeCounters() {
   try {
-    // 1. Get all view counters
-    const viewCounters = await redisClient.hGetAll("recipe:views");
-    // viewCounters will be an object like { "abc123": "4", "xyz999": "10" }
+    console.log("🔄 Starting flush operation...");
 
-    // 2. Get all like counters
-    const likeCounters = await redisClient.hGetAll("recipe:likes");
+    // 1. Fetch all view counters (fallback to {} if null)
+    const viewCounters = (await redisClient.hgetall("recipe:views")) || {};
+    console.log("📊 View counters from Redis:", viewCounters);
 
-    // 3. Clear out the Redis hashes so we don't double-count next time
+    // 2. Clear Redis key for views
     await redisClient.del("recipe:views");
-    await redisClient.del("recipe:likes");
+    console.log("🗑️ Cleared Redis view counters");
 
-    // 4. Batch update in DB
-    // (a) Update views
+    // 3. Batch update in Prisma
+    let updatedCount = 0;
+
+    // Update views
     for (const [recipeId, strCount] of Object.entries(viewCounters)) {
       const count = parseInt(strCount, 10);
-      // example with Prisma:
+      console.log(`📝 Updating recipe ${recipeId} with +${count} views`);
+
       await prisma.recipe.update({
         where: { id: recipeId },
         data: {
-          // e.g., if you have a "views" column in your schema
-          views: { increment: count },
+          // Adjust this field name to match your schema:
+          viewCount: {
+            increment: count,
+          },
         },
       });
+      updatedCount++;
     }
 
-    // (b) Update likes
-    for (const [recipeId, strCount] of Object.entries(likeCounters)) {
-      const count = parseInt(strCount, 10);
-      // e.g., if you have a "likes" column or something similar:
-      await prisma.recipe.update({
-        where: { id: recipeId },
-        data: {
-          likes: { increment: count }, // or some structure you define
-        },
-      });
-    }
-  } catch (err) {
-    console.error("Failed to flush recipe counters from Redis:", err);
-  } finally {
-    // Optionally disconnect from Prisma if needed
-    await prisma.$disconnect();
+    console.log(`✅ Successfully updated ${updatedCount} recipe records.`);
+    return { success: true, updatedRecipes: updatedCount };
+  } catch (error) {
+    console.error("❌ Error in flushRecipeCounters:", error);
+    throw error;
   }
+}
+
+// Run script directly (e.g. `npx tsx flushRecipeCounters.ts`)
+if (require.main === module) {
+  flushRecipeCounters()
+    .then((result) => {
+      console.log("flushRecipeCounters returned:", result);
+    })
+    .catch((error) => {
+      console.error("Error in flushRecipeCounters:", error);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+      process.exit(0);
+    });
 }

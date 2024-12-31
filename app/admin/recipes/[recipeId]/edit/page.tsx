@@ -1,19 +1,19 @@
-import { prisma } from "@/lib/db"
-import { notFound } from "next/navigation"
-import { RecipeForm } from "@/components/dashboard/recipe-form"
+import { prisma } from "@/lib/db";
+import { notFound } from "next/navigation";
+import { RecipeForm } from "@/components/admin/recipe-form";
 
 interface EditRecipePageProps {
   params: {
-    recipeId: string
-  }
+    recipeId: string;
+  };
 }
 
 export default async function EditRecipePage({
   params,
 }: {
-  params: Promise<{ recipeId: string }>
+  params: Promise<{ recipeId: string }>;
 }) {
-  const { recipeId } = await params
+  const { recipeId } = await params;
 
   const recipe = await prisma.recipe.findUnique({
     where: { id: recipeId },
@@ -22,22 +22,22 @@ export default async function EditRecipePage({
       tags: true,
       tips: true,
     },
-  })
+  });
 
   if (!recipe) {
-    notFound()
+    notFound();
   }
 
   const categories = await prisma.category.findMany({
     orderBy: { name: "asc" },
-  })
+  });
 
   const allTags = await prisma.tag.findMany({
     orderBy: { name: "asc" },
-  })
-  const allTagNames = allTags.map((tag) => tag.name)
+  });
+  const allTagNames = allTags.map((tag) => tag.name);
 
-  const selectedTags = recipe.tags.map((tag) => tag.name) || []
+  const selectedTags = recipe.tags.map((tag) => tag.name) || [];
 
   const initialData = {
     title: recipe.title,
@@ -58,7 +58,7 @@ export default async function EditRecipePage({
     // Convert array of selected tag strings to the form’s "tags" array
     tags: selectedTags,
     isEditorsPick: recipe.isEditorsPick,
-  }
+  };
 
   return (
     <div className="container mx-auto p-8">
@@ -72,5 +72,5 @@ export default async function EditRecipePage({
         />
       </div>
     </div>
-  )
+  );
 }

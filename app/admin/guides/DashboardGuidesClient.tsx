@@ -14,7 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-export default function DashboardGuidesClient({ guides }: { guides: any[] }) {
+export default function adminGuidesClient({ guides }: { guides: any[] }) {
   const form = useForm({
     defaultValues: {
       title: "",

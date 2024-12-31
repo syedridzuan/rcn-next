@@ -1,56 +1,90 @@
-'use client'
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Bookmark } from "lucide-react"
-import { saveRecipe, unsaveRecipe } from "./actions"
-import { toast } from "sonner"
-import { AddNoteModal } from "./AddNoteModal"
+import { useState } from "react";
+import { Bookmark } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AddNoteModal } from "./AddNoteModal";
+import { useToast } from "@/components/ui/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { useSession } from "next-auth/react";
+import { SubscribePromptDialog } from "@/components/SubscribePromptDialog";
+import { saveRecipe, unsaveRecipe } from "./actions";
 
 interface SaveRecipeButtonProps {
-  recipeId: string
-  savedRecipeId?: string | null
-  className?: string
-  existingNote?: string | null
+  recipeId: string;
+  savedRecipeId?: string | null;
+  className?: string;
+  existingNote?: string | null;
+  isSubscribed: boolean;
 }
 
-export function SaveRecipeButton({ 
-  recipeId, 
-  savedRecipeId, 
+export function SaveRecipeButton({
+  recipeId,
+  savedRecipeId,
   className,
-  existingNote 
+  existingNote,
+  isSubscribed,
 }: SaveRecipeButtonProps) {
-  const [isPending, setIsPending] = useState(false)
-  const [isSaved, setIsSaved] = useState(Boolean(savedRecipeId))
-  const [showNoteModal, setShowNoteModal] = useState(false)
-  const [currentSavedId, setCurrentSavedId] = useState(savedRecipeId)
+  const { data: session } = useSession();
+  const [isPending, setIsPending] = useState(false);
+  const [isSaved, setIsSaved] = useState(Boolean(savedRecipeId));
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [currentSavedId, setCurrentSavedId] = useState(savedRecipeId);
 
-  const handleToggleSave = async () => {
+  // Dialog akan muncul jika pengguna belum melanggan
+  const [showSubscribeDialog, setShowSubscribeDialog] = useState(false);
+
+  // shadcn/ui toast
+  const { toast } = useToast();
+
+  async function handleToggleSave() {
     try {
-      setIsPending(true)
-      
+      // 1. Semak sama ada pengguna mempunyai langganan
+      if (!isSubscribed) {
+        setShowSubscribeDialog(true);
+        return;
+      }
+
+      // 2. Jika pengguna sudah melanggan, teruskan simpanan
+      setIsPending(true);
+
       if (isSaved && currentSavedId) {
-        await unsaveRecipe(currentSavedId)
-        toast.success('Recipe removed from your collection')
-        setIsSaved(false)
-        setCurrentSavedId(null)
+        await unsaveRecipe(currentSavedId);
+        toast({
+          title: "Resipi Dikeluarkan",
+          description: "Resipi telah dikeluarkan daripada koleksi anda",
+        });
+        setIsSaved(false);
+        setCurrentSavedId(null);
       } else {
-        const result = await saveRecipe(recipeId)
+        const result = await saveRecipe(recipeId);
         if (result.success && result.savedRecipeId) {
-          setCurrentSavedId(result.savedRecipeId)
-          setIsSaved(true)
-          toast.success('Recipe saved! Would you like to add a note?', {
-            action: {
-              label: 'Add Note',
-              onClick: () => setShowNoteModal(true)
-            },
-          })
+          setCurrentSavedId(result.savedRecipeId);
+          setIsSaved(true);
+
+          // Gunakan <ToastAction> untuk butang “Tambah Nota”
+          toast({
+            title: "Resipi Disimpan",
+            description: "Ingin menambah nota?",
+            action: (
+              <ToastAction
+                altText="Tambah nota"
+                onClick={() => setShowNoteModal(true)}
+              >
+                Tambah Nota
+              </ToastAction>
+            ),
+          });
         }
       }
     } catch (error) {
-      toast.error('Something went wrong')
+      toast({
+        title: "Ralat",
+        description: "Terdapat masalah semasa memproses permintaan anda.",
+        variant: "destructive",
+      });
     } finally {
-      setIsPending(false)
+      setIsPending(false);
     }
   }
 
@@ -63,8 +97,8 @@ export function SaveRecipeButton({
         onClick={handleToggleSave}
         className={className}
       >
-        <Bookmark className={`h-4 w-4 mr-2 ${isSaved ? 'fill-current' : ''}`} />
-        {isSaved ? 'Saved' : 'Save Recipe'}
+        <Bookmark className={`h-4 w-4 mr-2 ${isSaved ? "fill-current" : ""}`} />
+        {isSaved ? "Telah Disimpan" : "Simpan Resipi"}
       </Button>
 
       {currentSavedId && (
@@ -75,6 +109,12 @@ export function SaveRecipeButton({
           existingNote={existingNote}
         />
       )}
+
+      {/* Paparkan dialog langganan jika belum melanggan */}
+      <SubscribePromptDialog
+        open={showSubscribeDialog}
+        onOpenChange={setShowSubscribeDialog}
+      />
     </>
-  )
-} 
+  );
+}

@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useState } from "react"
-import { toast } from "sonner"
-import { useRouter } from "next/navigation"
-import { deleteTagAction } from "./actions"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { deleteTagAction } from "./actions";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,38 +15,38 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Trash2 } from "lucide-react"
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 interface Tag {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface TagsListProps {
-  tags: Tag[]
+  tags: Tag[];
 }
 
 export default function TagsList({ tags }: TagsListProps) {
-  const router = useRouter()
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [tagToDelete, setTagToDelete] = useState<Tag | null>(null)
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [tagToDelete, setTagToDelete] = useState<Tag | null>(null);
 
   async function handleDelete(tag: Tag) {
-    setIsDeleting(true)
+    setIsDeleting(true);
     try {
-      const result = await deleteTagAction(tag.id)
+      const result = await deleteTagAction(tag.id);
       if (result.success) {
-        toast.success("Tag deleted successfully")
-        router.refresh()
+        toast.success("Tag deleted successfully");
+        router.refresh();
       } else {
-        toast.error(result.message || "Failed to delete tag")
+        toast.error(result.message || "Failed to delete tag");
       }
     } catch (error) {
-      toast.error("An unexpected error occurred")
+      toast.error("An unexpected error occurred");
     } finally {
-      setIsDeleting(false)
-      setTagToDelete(null)
+      setIsDeleting(false);
+      setTagToDelete(null);
     }
   }
 
@@ -62,7 +62,7 @@ export default function TagsList({ tags }: TagsListProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push(`/dashboard/tags/${tag.id}/edit`)}
+              onClick={() => router.push(`/admin/tags/${tag.id}/edit`)}
             >
               Edit
             </Button>
@@ -80,8 +80,8 @@ export default function TagsList({ tags }: TagsListProps) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete the tag "{tag.name}". This action
-                    cannot be undone.
+                    This will permanently delete the tag "{tag.name}". This
+                    action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -105,5 +105,5 @@ export default function TagsList({ tags }: TagsListProps) {
         </div>
       ))}
     </div>
-  )
-} 
+  );
+}

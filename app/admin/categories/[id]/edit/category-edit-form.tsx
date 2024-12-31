@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
-import { toast } from "sonner"
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
 import {
   Form,
   FormField,
@@ -13,32 +13,32 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from "@/components/ui/form"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { updateCategory } from "./actions"
+} from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { updateCategory } from "./actions";
 
 const FormSchema = z.object({
   name: z.string().nonempty("Name is required"),
   description: z.string().optional(),
-})
+});
 
-type FormType = z.infer<typeof FormSchema>
+type FormType = z.infer<typeof FormSchema>;
 
 interface CategoryEditFormProps {
   category: {
-    id: string
-    name: string
-    description: string | null
-    image: string | null
-  }
+    id: string;
+    name: string;
+    description: string | null;
+    image: string | null;
+  };
 }
 
 export default function CategoryEditForm({ category }: CategoryEditFormProps) {
-  const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<FormType>({
     resolver: zodResolver(FormSchema),
@@ -46,34 +46,34 @@ export default function CategoryEditForm({ category }: CategoryEditFormProps) {
       name: category.name,
       description: category.description || "",
     },
-  })
+  });
 
   const onSubmit = async (values: FormType) => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      const formData = new FormData()
-      formData.append("id", category.id)
-      formData.append("name", values.name)
+      const formData = new FormData();
+      formData.append("id", category.id);
+      formData.append("name", values.name);
       if (values.description) {
-        formData.append("description", values.description)
+        formData.append("description", values.description);
       }
 
-      const fileInput = document.querySelector<HTMLInputElement>("#imageFile")
+      const fileInput = document.querySelector<HTMLInputElement>("#imageFile");
       if (fileInput?.files?.[0]) {
-        formData.append("imageFile", fileInput.files[0])
+        formData.append("imageFile", fileInput.files[0]);
       }
 
-      await updateCategory(formData)
-      toast.success("Category updated successfully!")
-      router.push("/dashboard/categories")
-      router.refresh()
+      await updateCategory(formData);
+      toast.success("Category updated successfully!");
+      router.push("/admin/categories");
+      router.refresh();
     } catch (error: any) {
-      toast.error(error.message || "Failed to update category")
+      toast.error(error.message || "Failed to update category");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <Card className="max-w-lg mx-auto">
@@ -142,5 +142,5 @@ export default function CategoryEditForm({ category }: CategoryEditFormProps) {
         </Form>
       </CardContent>
     </Card>
-  )
-} 
+  );
+}

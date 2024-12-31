@@ -1,29 +1,29 @@
-"use client"
+"use client";
 
-import { createTagAction } from '../actions'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
-import { useState } from 'react'
+import { createTagAction } from "../actions";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useState } from "react";
 
 export default function NewTagPage() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setIsLoading(true)
-    
-    const formData = new FormData(e.currentTarget as HTMLFormElement)
-    const result = await createTagAction(formData)
+    e.preventDefault();
+    setIsLoading(true);
+
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const result = await createTagAction(formData);
 
     if (result.success) {
-      toast.success(result.message)
-      router.push('/dashboard/tags')
+      toast.success(result.message);
+      router.push("/admin/tags");
     } else {
-      toast.error(result.message)
+      toast.error(result.message);
     }
 
-    setIsLoading(false)
+    setIsLoading(false);
   }
 
   return (
@@ -36,13 +36,21 @@ export default function NewTagPage() {
         className="border w-full px-3 py-2"
       />
       <div className="flex justify-end gap-2">
-        <button type="button" onClick={() => history.back()} className="border px-4 py-2">
+        <button
+          type="button"
+          onClick={() => history.back()}
+          className="border px-4 py-2"
+        >
           Cancel
         </button>
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2" disabled={isLoading}>
-          {isLoading ? 'Creating...' : 'Create'}
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2"
+          disabled={isLoading}
+        >
+          {isLoading ? "Creating..." : "Create"}
         </button>
       </div>
     </form>
-  )
+  );
 }

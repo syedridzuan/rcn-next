@@ -1,21 +1,21 @@
-import { Suspense } from 'react'
-import { Metadata } from 'next'
-import { DashboardShell } from '@/components/shell'
-import { DashboardHeader } from '@/components/dashboard-header'
-import { LoadingPage } from '@/components/loading'
-import { ImageManager } from './image-manager'
-import { prisma } from '@/lib/db'
-import { notFound } from 'next/navigation'
-import { Breadcrumbs } from '@/components/breadcrumbs'
+import { Suspense } from "react";
+import { Metadata } from "next";
+import { adminShell } from "@/components/shell";
+import { adminHeader } from "@/components/admin-header";
+import { LoadingPage } from "@/components/loading";
+import { ImageManager } from "./image-manager";
+import { prisma } from "@/lib/db";
+import { notFound } from "next/navigation";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 interface GuideImagesPageProps {
-  params: { guideId: string }
+  params: { guideId: string };
 }
 
 export const metadata: Metadata = {
-  title: 'Manage Guide Images',
-  description: 'Upload and manage images for your guide',
-}
+  title: "Manage Guide Images",
+  description: "Upload and manage images for your guide",
+};
 
 async function getGuide(guideId: string) {
   const guide = await prisma.guide.findUnique({
@@ -25,42 +25,41 @@ async function getGuide(guideId: string) {
       title: true,
       images: {
         orderBy: {
-          isPrimary: 'desc',
+          isPrimary: "desc",
         },
       },
     },
-  })
+  });
 
-  if (!guide) notFound()
+  if (!guide) notFound();
 
-  return guide
+  return guide;
 }
 
-export default async function GuideImagesPage({ params }: GuideImagesPageProps) {
-  const resolvedParams = await Promise.resolve(params)
-  const guide = await getGuide(resolvedParams.guideId)
+export default async function GuideImagesPage({
+  params,
+}: GuideImagesPageProps) {
+  const resolvedParams = await Promise.resolve(params);
+  const guide = await getGuide(resolvedParams.guideId);
 
   return (
-    <DashboardShell>
+    <adminShell>
       <Breadcrumbs
         items={[
-          { label: 'Guides', href: '/dashboard/guides' },
-          { label: guide.title, href: `/dashboard/guides/${guide.id}/edit` },
-          { label: 'Images', href: `/dashboard/guides/${guide.id}/images` },
+          { label: "Guides", href: "/admin/guides" },
+          { label: guide.title, href: `/admin/guides/${guide.id}/edit` },
+          { label: "Images", href: `/admin/guides/${guide.id}/images` },
         ]}
       />
-      <DashboardHeader
+      <adminHeader
         heading="Guide Images"
         text={`Manage images for ${guide.title}`}
       />
       <div className="grid gap-8">
         <Suspense fallback={<LoadingPage />}>
-          <ImageManager 
-            guideId={guide.id} 
-            initialImages={guide.images}
-          />
+          <ImageManager guideId={guide.id} initialImages={guide.images} />
         </Suspense>
       </div>
-    </DashboardShell>
-  )
-} 
+    </adminShell>
+  );
+}

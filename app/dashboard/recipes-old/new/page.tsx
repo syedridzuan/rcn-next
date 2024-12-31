@@ -1,12 +1,12 @@
-import { prisma } from '@/lib/db'
-import { RecipeForm } from '@/components/dashboard/recipe-form'
+import { prisma } from "@/lib/db";
+import { RecipeForm } from "@/components/admin/recipe-form";
 
 export default async function NewRecipePage() {
   const categories = await prisma.category.findMany({
     orderBy: {
-      name: 'asc'
-    }
-  })
+      name: "asc",
+    },
+  });
 
   return (
     <div className="container mx-auto py-8">
@@ -15,5 +15,5 @@ export default async function NewRecipePage() {
         <RecipeForm categories={categories} />
       </div>
     </div>
-  )
-} 
+  );
+}

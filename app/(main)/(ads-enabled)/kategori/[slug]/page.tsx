@@ -1,91 +1,111 @@
-import { notFound } from 'next/navigation'
-import { prisma } from '@/lib/db'
-import Image from 'next/image'
-import Link from 'next/link'
-import { Metadata } from 'next'
-import { cookies } from 'next/headers' // If needed for session or other logic
-import CategoryFilters from './components/CategoryFilters'
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/db";
+import Image from "next/image";
+import Link from "next/link";
+import { Metadata } from "next";
+import { cookies } from "next/headers"; // If needed for session or other logic
+import CategoryFilters from "./components/CategoryFilters";
 
 interface PageProps {
-  params: { slug: string }
+  params: { slug: string };
   searchParams: {
-    page?: string
-    difficulty?: string
-    sort?: string
-  }
+    page?: string;
+    difficulty?: string;
+    sort?: string;
+  };
 }
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 12;
 const PAGE_RANGE = 2;
 
 function toTitleCase(str: string) {
-  return str.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+  return str.replace(
+    /\w\S*/g,
+    (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+  );
 }
 
-export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: PageProps): Promise<Metadata> {
   const resolvedParams = await Promise.resolve(params);
   const resolvedSearchParams = await Promise.resolve(searchParams);
 
   const category = await prisma.category.findUnique({
     where: { slug: resolvedParams.slug },
-    select: { name: true, description: true }
-  })
+    select: { name: true, description: true },
+  });
 
   if (!category) {
     return {
-      title: 'Kategori Tidak Dijumpai',
-      description: 'Kategori yang anda cari tidak dijumpai.'
-    }
+      title: "Kategori Tidak Dijumpai",
+      description: "Kategori yang anda cari tidak dijumpai.",
+    };
   }
 
-  const page = parseInt(resolvedSearchParams.page || '1', 10)
-  const canonicalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/kategori/${resolvedParams.slug}`
-  
-  let robots = undefined
+  const page = parseInt(resolvedSearchParams.page || "1", 10);
+  const canonicalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/kategori/${resolvedParams.slug}`;
+
+  let robots = undefined;
   if (page > 1) {
     // For subsequent pages, optional noindex
-    robots = { index: false, follow: true }
+    robots = { index: false, follow: true };
   }
 
   return {
     title: `${toTitleCase(category.name)} - ResepiCheNom`,
-    description: category.description || `Terokai resipi lazat dalam kategori ${category.name}.`,
+    description:
+      category.description ||
+      `Terokai resipi lazat dalam kategori ${category.name}.`,
     openGraph: {
       title: category.name,
-      description: category.description || `Terokai resipi lazat dalam kategori ${category.name}.`,
+      description:
+        category.description ||
+        `Terokai resipi lazat dalam kategori ${category.name}.`,
       url: canonicalUrl,
-      type: 'website',
+      type: "website",
     },
     twitter: {
-      card: 'summary_large_image',
+      card: "summary_large_image",
       title: category.name,
-      description: category.description || `Terokai resipi lazat dalam kategori ${category.name}.`,
+      description:
+        category.description ||
+        `Terokai resipi lazat dalam kategori ${category.name}.`,
     },
     alternates: {
       canonical: canonicalUrl,
     },
     robots,
-  }
+  };
 }
 
-export default async function CategoryPage({ params, searchParams }: PageProps) {
+export default async function CategoryPage({
+  params,
+  searchParams,
+}: PageProps) {
   const resolvedParams = await Promise.resolve(params);
   const resolvedSearchParams = await Promise.resolve(searchParams);
 
-  const page = parseInt(resolvedSearchParams.page || '1', 10);
+  const page = parseInt(resolvedSearchParams.page || "1", 10);
   const skip = (page - 1) * ITEMS_PER_PAGE;
 
   // Filters & Sorting
-  const difficultyFilter = resolvedSearchParams.difficulty && resolvedSearchParams.difficulty.toUpperCase();
+  const difficultyFilter =
+    resolvedSearchParams.difficulty &&
+    resolvedSearchParams.difficulty.toUpperCase();
   const sortParam = resolvedSearchParams.sort;
-  let orderBy: any = { createdAt: 'desc' }
-  if (sortParam === 'cookTime') orderBy = { cookTime: 'asc' }
-  if (sortParam === 'prepTime') orderBy = { prepTime: 'asc' }
+  let orderBy: any = { createdAt: "desc" };
+  if (sortParam === "cookTime") orderBy = { cookTime: "asc" };
+  if (sortParam === "prepTime") orderBy = { prepTime: "asc" };
 
   // Where clause for difficulty if provided
-  const whereClause: any = {}
-  if (difficultyFilter && ['EASY','MEDIUM','HARD','EXPERT'].includes(difficultyFilter)) {
-    whereClause.difficulty = difficultyFilter
+  const whereClause: any = {};
+  if (
+    difficultyFilter &&
+    ["EASY", "MEDIUM", "HARD", "EXPERT"].includes(difficultyFilter)
+  ) {
+    whereClause.difficulty = difficultyFilter;
   }
 
   const category = await prisma.category.findUnique({
@@ -105,18 +125,22 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         take: ITEMS_PER_PAGE,
       },
     },
-  })
+  });
 
   if (!category) {
-    notFound()
+    notFound();
   }
 
-  const totalRecipes = category.recipesCount
+  const totalRecipes = category.recipesCount;
   const totalPages = Math.ceil(totalRecipes / ITEMS_PER_PAGE);
 
   if (page < 1 || (totalPages > 0 && page > totalPages)) {
-    notFound()
+    notFound();
   }
+
+  console.log("totalRecipes:", totalRecipes);
+  console.log("ITEMS_PER_PAGE:", ITEMS_PER_PAGE);
+  console.log("totalPages:", totalPages);
 
   // Fetch Editor’s Pick recipes for this category (just the first 1-2)
   const editorsPicks = await prisma.recipe.findMany({
@@ -124,66 +148,73 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
       categoryId: category.id,
       isEditorsPick: true,
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
     take: 2,
     include: {
       user: { select: { name: true, image: true } },
       tags: true,
       images: true,
-    }
-  })
+    },
+  });
 
   // Structured data for SEO (CollectionPage + Breadcrumb)
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "name": category.name,
-    "description": category.description,
-    "url": `${process.env.NEXT_PUBLIC_APP_URL}/kategori/${resolvedParams.slug}`,
-    "breadcrumb": {
+    name: category.name,
+    description: category.description,
+    url: `${process.env.NEXT_PUBLIC_APP_URL}/kategori/${resolvedParams.slug}`,
+    breadcrumb: {
       "@type": "BreadcrumbList",
-      "itemListElement": [
+      itemListElement: [
         {
           "@type": "ListItem",
-          "position": 1,
-          "name": "Laman Utama",
-          "item": `${process.env.NEXT_PUBLIC_APP_URL}/`
+          position: 1,
+          name: "Laman Utama",
+          item: `${process.env.NEXT_PUBLIC_APP_URL}/`,
         },
         {
           "@type": "ListItem",
-          "position": 2,
-          "name": "Kategori",
-          "item": `${process.env.NEXT_PUBLIC_APP_URL}/kategori`
+          position: 2,
+          name: "Kategori",
+          item: `${process.env.NEXT_PUBLIC_APP_URL}/kategori`,
         },
         {
           "@type": "ListItem",
-          "position": 3,
-          "name": category.name,
-          "item": `${process.env.NEXT_PUBLIC_APP_URL}/kategori/${resolvedParams.slug}`
-        }
-      ]
-    }
-  }
+          position: 3,
+          name: category.name,
+          item: `${process.env.NEXT_PUBLIC_APP_URL}/kategori/${resolvedParams.slug}`,
+        },
+      ],
+    },
+  };
 
   // Create a function for pagination with ellipses
-  function getPaginationPages(current: number, total: number): Array<number | string> {
-    const pages: Array<number | string> = []
-    pages.push(1)
-    if (current > PAGE_RANGE + 2) pages.push('...')
-    for (let i = Math.max(2, current - PAGE_RANGE); i <= Math.min(total - 1, current + PAGE_RANGE); i++) {
-      pages.push(i)
+  function getPaginationPages(
+    current: number,
+    total: number
+  ): Array<number | string> {
+    const pages: Array<number | string> = [];
+    pages.push(1);
+    if (current > PAGE_RANGE + 2) pages.push("...");
+    for (
+      let i = Math.max(2, current - PAGE_RANGE);
+      i <= Math.min(total - 1, current + PAGE_RANGE);
+      i++
+    ) {
+      pages.push(i);
     }
-    if (current < total - (PAGE_RANGE + 1)) pages.push('...')
-    if (total > 1) pages.push(total)
-    return pages
+    if (current < total - (PAGE_RANGE + 1)) pages.push("...");
+    if (total > 1) pages.push(total);
+    return pages;
   }
 
-  const pagesArray = getPaginationPages(page, totalPages)
+  const pagesArray = getPaginationPages(page, totalPages);
 
   async function copyShareLink() {
-    if (typeof window !== 'undefined') {
-      await navigator.clipboard.writeText(window.location.href)
-      alert('URL disalin!')
+    if (typeof window !== "undefined") {
+      await navigator.clipboard.writeText(window.location.href);
+      alert("URL disalin!");
     }
   }
 
@@ -194,9 +225,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
-      {page > 1 && (
-        <meta name="robots" content="noindex,follow" />
-      )}
+      {page > 1 && <meta name="robots" content="noindex,follow" />}
 
       {/* Hero Section */}
       {category.image && (
@@ -227,11 +256,11 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
 
       {!category.image && (
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{toTitleCase(category.name)}</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            {toTitleCase(category.name)}
+          </h1>
           {category.description && (
-            <p className="text-gray-700">
-              {category.description}
-            </p>
+            <p className="text-gray-700">{category.description}</p>
           )}
           {totalRecipes > 0 && (
             <p className="text-sm text-gray-600 mt-1">
@@ -272,18 +301,23 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
                       {recipe.user.image && (
                         <Image
                           src={recipe.user.image}
-                          alt={recipe.user.name || ''}
+                          alt={recipe.user.name || ""}
                           width={24}
                           height={24}
                           className="rounded-full"
                         />
                       )}
-                      <span className="text-sm text-gray-600">{recipe.user.name}</span>
+                      <span className="text-sm text-gray-600">
+                        {recipe.user.name}
+                      </span>
                     </div>
                     {recipe.tags && recipe.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 text-xs text-blue-600">
-                        {recipe.tags.map(tag => (
-                          <span key={tag.id} className="underline hover:text-blue-800">
+                        {recipe.tags.map((tag) => (
+                          <span
+                            key={tag.id}
+                            className="underline hover:text-blue-800"
+                          >
                             #{tag.name}
                           </span>
                         ))}
@@ -298,8 +332,8 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
       )}
 
       {/* Replace the filters section with the new component */}
-      <CategoryFilters 
-        difficulty={resolvedSearchParams.difficulty} 
+      <CategoryFilters
+        difficulty={resolvedSearchParams.difficulty}
         sort={resolvedSearchParams.sort}
         slug={resolvedParams.slug}
       />
@@ -339,18 +373,23 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
                     {recipe.user.image && (
                       <Image
                         src={recipe.user.image}
-                        alt={recipe.user.name || ''}
+                        alt={recipe.user.name || ""}
                         width={24}
                         height={24}
                         className="rounded-full"
                       />
                     )}
-                    <span className="text-sm text-gray-600">{recipe.user.name}</span>
+                    <span className="text-sm text-gray-600">
+                      {recipe.user.name}
+                    </span>
                   </div>
                   {recipe.tags && recipe.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 text-xs text-blue-600">
-                      {recipe.tags.map(tag => (
-                        <span key={tag.id} className="underline hover:text-blue-800">
+                      {recipe.tags.map((tag) => (
+                        <span
+                          key={tag.id}
+                          className="underline hover:text-blue-800"
+                        >
                           #{tag.name}
                         </span>
                       ))}
@@ -366,18 +405,20 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex flex-col items-center mt-8 space-y-4">
-          <p>Halaman {page} daripada {totalPages}</p>
+          <p>
+            Halaman {page} daripada {totalPages}
+          </p>
           <div className="flex items-center gap-2">
             {/* Previous Button */}
             <Link
               href={`/kategori/${resolvedParams.slug}?${new URLSearchParams({
                 ...resolvedSearchParams,
-                page: (page - 1).toString()
+                page: (page - 1).toString(),
               })}`}
               className={`px-3 py-2 rounded border text-sm ${
-                page <= 1 
-                  ? 'text-gray-400 border-gray-200 pointer-events-none' 
-                  : 'hover:bg-orange-50 hover:border-orange-200 text-gray-600 border-gray-300'
+                page <= 1
+                  ? "text-gray-400 border-gray-200 pointer-events-none"
+                  : "hover:bg-orange-50 hover:border-orange-200 text-gray-600 border-gray-300"
               }`}
             >
               Sebelumnya
@@ -385,29 +426,34 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
 
             {/* Page Numbers with ellipses */}
             {pagesArray.map((p, idx) => {
-              if (typeof p === 'string') {
+              if (typeof p === "string") {
                 return (
-                  <span key={`ellipsis-${idx}`} className="px-3 py-2 text-sm text-gray-400">
+                  <span
+                    key={`ellipsis-${idx}`}
+                    className="px-3 py-2 text-sm text-gray-400"
+                  >
                     ...
                   </span>
-                )
+                );
               } else {
                 return (
                   <Link
                     key={`page-${p}`}
-                    href={`/kategori/${resolvedParams.slug}?${new URLSearchParams({
+                    href={`/kategori/${
+                      resolvedParams.slug
+                    }?${new URLSearchParams({
                       ...resolvedSearchParams,
-                      page: p.toString()
+                      page: p.toString(),
                     })}`}
                     className={`px-3 py-2 rounded border text-sm ${
-                      p === page 
-                        ? 'bg-orange-500 text-white border-orange-500' 
-                        : 'hover:bg-orange-50 hover:border-orange-200 text-gray-600 border-gray-300'
+                      p === page
+                        ? "bg-orange-500 text-white border-orange-500"
+                        : "hover:bg-orange-50 hover:border-orange-200 text-gray-600 border-gray-300"
                     }`}
                   >
                     {p}
                   </Link>
-                )
+                );
               }
             })}
 
@@ -415,12 +461,12 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
             <Link
               href={`/kategori/${resolvedParams.slug}?${new URLSearchParams({
                 ...resolvedSearchParams,
-                page: (page + 1).toString()
+                page: (page + 1).toString(),
               })}`}
               className={`px-3 py-2 rounded border text-sm ${
-                page >= totalPages 
-                  ? 'text-gray-400 border-gray-200 pointer-events-none' 
-                  : 'hover:bg-orange-50 hover:border-orange-200 text-gray-600 border-gray-300'
+                page >= totalPages
+                  ? "text-gray-400 border-gray-200 pointer-events-none"
+                  : "hover:bg-orange-50 hover:border-orange-200 text-gray-600 border-gray-300"
               }`}
             >
               Seterusnya
@@ -429,5 +475,5 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         </div>
       )}
     </div>
-  )
+  );
 }

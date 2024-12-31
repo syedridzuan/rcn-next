@@ -1,11 +1,39 @@
-// lib/redis.ts
-import { createClient } from "redis";
+import { Redis } from "@upstash/redis";
 
-export const redisClient = createClient({
-  url: process.env.REDIS_URL, // or wherever your Redis is hosted
+if (
+  !process.env.UPSTASH_REDIS_REST_URL ||
+  !process.env.UPSTASH_REDIS_REST_TOKEN
+) {
+  throw new Error("Redis environment variables are not set");
+}
+
+export const redisClient = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-redisClient
-  .connect()
-  .then(() => console.log("Connected to Redis!"))
-  .catch((err) => console.error("Redis connection error:", err));
+// Test connection function
+export async function testConnection(): Promise<void> {
+  try {
+    console.log("Redis configuration:", {
+      url: process.env.UPSTASH_REDIS_REST_URL ? "Set" : "Not set",
+      token: process.env.UPSTASH_REDIS_REST_TOKEN ? "Set" : "Not set",
+    });
+
+    // Test connection by setting and getting a value
+    await redisClient.set("test-connection", "working");
+    const testValue = await redisClient.get("test-connection");
+
+    if (testValue === "working") {
+      console.log("✅ Redis connection successful");
+      await redisClient.del("test-connection"); // Clean up test key
+    } else {
+      console.error("❌ Redis connection test failed");
+    }
+  } catch (error) {
+    console.error("❌ Redis connection error:", error);
+    throw error;
+  }
+}
+
+export default redisClient;

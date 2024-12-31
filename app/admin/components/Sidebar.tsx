@@ -22,7 +22,7 @@ const sidebarItems = [
   {
     href: "/admin",
     icon: LayoutDashboard,
-    label: "Dashboard",
+    label: "admin",
   },
   {
     href: "/admin/categories",

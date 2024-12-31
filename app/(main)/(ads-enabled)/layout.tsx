@@ -1,12 +1,16 @@
-// app/(ads-enabled)/layout.tsx
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "@/app/globals.css";
+
+import Script from "next/script";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { Toaster } from "sonner";
-import Script from "next/script";
 import { GAProvider } from "@/components/providers/ga-provider";
+import { Toaster } from "@/components/ui/toaster"; // shadcn Toaster
+
+import { prisma } from "@/lib/db";
+import { auth } from "@/auth"; // NextAuth v5 server function
+import { hasActiveSubscription } from "@/lib/subscription";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -15,7 +19,7 @@ export const metadata: Metadata = {
   description: "Hanya Resepi Masakan Terbaik",
 };
 
-export default function AdsEnabledLayout({
+export default async function AdsEnabledLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -23,8 +27,18 @@ export default function AdsEnabledLayout({
   const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
   const isProduction = process.env.NODE_ENV === "production";
 
+  // 1. Check if user is authenticated (server-side)
+  const session = await auth();
+  let isUserSubscribed = false;
+
+  // 2. If logged in, verify subscription
+  if (session?.user?.id) {
+    isUserSubscribed = await hasActiveSubscription(session.user.id);
+  }
+
   return (
     <>
+      {/* Optional: Google Analytics */}
       {measurementId && (
         <>
           <Script
@@ -41,7 +55,9 @@ export default function AdsEnabledLayout({
           </Script>
         </>
       )}
-      {isProduction && (
+
+      {/* Only show AdSense script if in production AND user is NOT subscribed */}
+      {isProduction && !isUserSubscribed && (
         <Script
           id="adsense-script"
           strategy="afterInteractive"
@@ -49,7 +65,6 @@ export default function AdsEnabledLayout({
           crossOrigin="anonymous"
         />
       )}
-
       <ThemeProvider
         attribute="class"
         defaultTheme="system"
@@ -57,10 +72,14 @@ export default function AdsEnabledLayout({
         disableTransitionOnChange
       >
         <AuthProvider>
-          {/* Do not wrap with <Layout> or re-include <Header> and <Footer> here */}
+          {/* If you want GA events, conditionally render GAProvider */}
           {measurementId && <GAProvider />}
+
+          {/* Render all child routes/components here */}
           {children}
-          <Toaster richColors />
+
+          {/* Shadcn Toaster for toast notifications */}
+          <Toaster />
         </AuthProvider>
       </ThemeProvider>
     </>

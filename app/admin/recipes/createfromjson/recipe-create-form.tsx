@@ -2,10 +2,17 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import {
+  useForm,
+  useFieldArray,
+  Control,
+  FieldValues,
+  FormProvider,
+} from "react-hook-form";
+
+import { toast } from "sonner"; // Or replace with your toast library
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -44,6 +51,7 @@ const recipeSchema = z.object({
   servings: z.coerce.number().min(1, "Servings must be >= 1"),
   difficulty: z.string().default("EASY"),
   categoryId: z.string().nonempty("Please select a category"),
+
   // “sections” structure (ingredients/instructions)
   sections: z
     .array(
@@ -58,7 +66,16 @@ const recipeSchema = z.object({
       })
     )
     .default([]),
-  tips: z.array(z.string().min(1)).default([]),
+
+  // Updated tips to be an array of objects => each object has "content"
+  tips: z
+    .array(
+      z.object({
+        content: z.string().min(1, "Tip content is required"),
+      })
+    )
+    .default([]),
+
   tags: z.array(z.string()).default([]),
   isEditorsPick: z.boolean().default(false),
 });
@@ -96,9 +113,9 @@ export function RecipeCreateForm({ categories }: RecipeCreateFormProps) {
       prepTime: 10,
       servings: 2,
       difficulty: "EASY",
-      categoryId: categories[0]?.id || "", // pick first as default
+      categoryId: categories[0]?.id || "",
       sections: [],
-      tips: [],
+      tips: [], // now an array of objects
       tags: [],
       isEditorsPick: false,
     },
@@ -114,7 +131,7 @@ export function RecipeCreateForm({ categories }: RecipeCreateFormProps) {
     control: form.control,
   });
 
-  // TIPS field array
+  // TIPS field array -> now an array of objects
   const {
     fields: tipFields,
     append: appendTip,
@@ -124,9 +141,6 @@ export function RecipeCreateForm({ categories }: RecipeCreateFormProps) {
     control: form.control,
   });
 
-  // (Optional) If you have “tags” as a separate text input or a comma-based approach,
-  // you can handle it similarly, or keep it minimal.
-
   //----------------------------------------------
   // Form Submission
   //----------------------------------------------
@@ -135,7 +149,7 @@ export function RecipeCreateForm({ categories }: RecipeCreateFormProps) {
       const result = await createRecipe(data);
       if (result?.success) {
         toast.success("Recipe created successfully!");
-        router.push("/dashboard/recipes"); // or wherever you want to go
+        router.push("/admin/recipes");
       } else {
         toast.error("Failed to create recipe.");
       }
@@ -145,12 +159,34 @@ export function RecipeCreateForm({ categories }: RecipeCreateFormProps) {
   }
 
   //----------------------------------------------
-  // 4. Handle “Paste JSON” parsing
+  // “Paste JSON” parsing
   //----------------------------------------------
   function handleJsonParse(e: FormEvent) {
     e.preventDefault();
     try {
       const parsed = JSON.parse(jsonInput);
+      console.log("parsed.tips raw:---------->", parsed.tips);
+      // Adjust this to match your new shape for tips => array of objects
+      // If user pastes a "tips" array of strings, you can transform them here.
+      // e.g., if parsed.tips is array of strings: convert to array of {content}
+      let tipsValue: { content: string }[] = [];
+      if (Array.isArray(parsed.tips)) {
+        tipsValue = parsed.tips.map((tip: any, i: number) => {
+          // Log each tip individually
+          console.log(`Tip #${i} =>`, tip);
+
+          if (typeof tip === "string") {
+            return { content: tip };
+          } else if (typeof tip?.content === "string") {
+            return { content: tip.content };
+          }
+          return { content: "Invalid tip" };
+        });
+
+        // Now log the final tipsValue after mapping is complete
+        console.log("Final tipsValue after map:", tipsValue);
+      }
+
       form.reset({
         ...form.getValues(),
         title: parsed.title || "",
@@ -163,10 +199,11 @@ export function RecipeCreateForm({ categories }: RecipeCreateFormProps) {
         difficulty: parsed.difficulty || "EASY",
         categoryId: parsed.categoryId || categories[0]?.id || "",
         sections: parsed.sections || [],
-        tips: parsed.tips || [],
+        tips: tipsValue,
         tags: parsed.tags || [],
         isEditorsPick: parsed.isEditorsPick || false,
       });
+
       toast.success("JSON parsed and form populated!");
     } catch (err) {
       toast.error("Invalid JSON");
@@ -415,11 +452,14 @@ export function RecipeCreateForm({ categories }: RecipeCreateFormProps) {
           ))}
         </div>
 
-        {/* TIPS SECTION */}
+        {/* TIPS SECTION (array of objects) */}
         <div className="space-y-4 border p-4 rounded-md">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-lg">Tips</h2>
-            <Button variant="outline" onClick={() => appendTip("")}>
+            <Button
+              variant="outline"
+              onClick={() => appendTip({ content: "" })}
+            >
               <PlusCircle className="w-4 h-4 mr-1" />
               Add Tip
             </Button>
@@ -429,7 +469,7 @@ export function RecipeCreateForm({ categories }: RecipeCreateFormProps) {
             <div key={tip.id} className="flex items-center gap-2 mt-2">
               <FormField
                 control={form.control}
-                name={`tips.${idx}`}
+                name={`tips.${idx}.content`}
                 render={({ field }) => (
                   <FormItem className="flex-1">
                     <FormLabel className="sr-only">Tip</FormLabel>
@@ -467,7 +507,11 @@ export function RecipeCreateForm({ categories }: RecipeCreateFormProps) {
             <div className="space-y-4">
               <Textarea
                 className="h-40"
-                placeholder='{"title":"My Recipe","sections":[{"title":"Ingredients","type":"INGREDIENTS","items":[{"content":"1 cup sugar"}]}],...}'
+                placeholder='{
+  "title":"My Recipe",
+  "tips":[{"content":"Keep dough cold"}],
+  "sections":[{"title":"Ingredients","type":"INGREDIENTS","items":[{"content":"1 cup sugar"}]}]
+}'
                 value={jsonInput}
                 onChange={(e) => setJsonInput(e.target.value)}
               />
@@ -500,7 +544,7 @@ export function RecipeCreateForm({ categories }: RecipeCreateFormProps) {
         <div className="flex justify-end gap-4">
           <Button
             variant="outline"
-            onClick={() => router.push("/dashboard/recipes")}
+            onClick={() => router.push("/admin/recipes")}
           >
             Cancel
           </Button>
@@ -519,7 +563,7 @@ function SectionItems({
   control,
 }: {
   sectionIndex: number;
-  control: any;
+  control: Control<FieldValues>;
 }) {
   const { fields, append, remove } = useFieldArray({
     name: `sections.${sectionIndex}.items`,

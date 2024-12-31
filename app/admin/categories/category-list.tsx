@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useRouter } from "next/navigation"
-import { useState } from "react"
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
-import { Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,35 +15,41 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { deleteCategory } from "./actions"
+} from "@/components/ui/alert-dialog";
+import { deleteCategory } from "./actions";
 
 interface Category {
-  id: string
-  name: string
-  description?: string | null
+  id: string;
+  name: string;
+  description?: string | null;
 }
 
-export default function CategoryList({ categories }: { categories: Category[] }) {
-  const router = useRouter()
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null)
+export default function CategoryList({
+  categories,
+}: {
+  categories: Category[];
+}) {
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
+    null
+  );
 
   async function handleDelete(category: Category) {
-    setIsDeleting(true)
+    setIsDeleting(true);
     try {
-      const result = await deleteCategory(category.id)
+      const result = await deleteCategory(category.id);
       if (result.success) {
-        toast.success("Category deleted successfully")
-        router.refresh()
+        toast.success("Category deleted successfully");
+        router.refresh();
       } else {
-        toast.error(result.message || "Failed to delete category")
+        toast.error(result.message || "Failed to delete category");
       }
     } catch (error) {
-      toast.error("An unexpected error occurred")
+      toast.error("An unexpected error occurred");
     } finally {
-      setIsDeleting(false)
-      setCategoryToDelete(null)
+      setIsDeleting(false);
+      setCategoryToDelete(null);
     }
   }
 
@@ -57,14 +63,18 @@ export default function CategoryList({ categories }: { categories: Category[] })
           <div>
             <span className="font-medium">{category.name}</span>
             {category.description && (
-              <p className="text-sm text-muted-foreground">{category.description}</p>
+              <p className="text-sm text-muted-foreground">
+                {category.description}
+              </p>
             )}
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push(`/dashboard/categories/${category.id}/edit`)}
+              onClick={() =>
+                router.push(`/admin/categories/${category.id}/edit`)
+              }
             >
               Edit
             </Button>
@@ -82,7 +92,7 @@ export default function CategoryList({ categories }: { categories: Category[] })
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete the category "{category.name}". 
+                    This will permanently delete the category "{category.name}".
                     This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -107,5 +117,5 @@ export default function CategoryList({ categories }: { categories: Category[] })
         </div>
       ))}
     </div>
-  )
-} 
+  );
+}

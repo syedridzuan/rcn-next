@@ -20,5 +20,5 @@ export async function addSectionAction(formData: FormData) {
   });
 
   // Optionally revalidate to show updated sections immediately:
-  // revalidatePath(`/dashboard/guides/${guideId}/edit`);
+  // revalidatePath(`/admin/guides/${guideId}/edit`);
 }

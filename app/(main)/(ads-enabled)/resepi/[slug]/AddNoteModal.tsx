@@ -1,50 +1,69 @@
-'use client'
+"use client";
 
-import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { updateSavedRecipeNotes } from "./actions"
-import { toast } from "sonner"
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { updateSavedRecipeNotes } from "./actions";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AddNoteModalProps {
-  savedRecipeId: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  existingNote?: string | null
+  savedRecipeId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  existingNote?: string | null;
 }
 
-export function AddNoteModal({ 
-  savedRecipeId, 
-  open, 
+export function AddNoteModal({
+  savedRecipeId,
+  open,
   onOpenChange,
-  existingNote 
+  existingNote,
 }: AddNoteModalProps) {
-  const [note, setNote] = useState(existingNote || '')
-  const [isPending, setIsPending] = useState(false)
+  const [note, setNote] = useState(existingNote || "");
+  const [isPending, setIsPending] = useState(false);
+
+  const { toast } = useToast();
 
   const handleSave = async () => {
     try {
-      setIsPending(true)
-      await updateSavedRecipeNotes(savedRecipeId, note)
-      toast.success('Note saved successfully')
-      onOpenChange(false)
+      setIsPending(true);
+      await updateSavedRecipeNotes(savedRecipeId, note);
+
+      // Paparkan toast kejayaan
+      toast({
+        title: "Berjaya",
+        description: "Nota anda telah disimpan.",
+        variant: "default",
+      });
+
+      onOpenChange(false);
     } catch (error) {
-      toast.error('Failed to save note')
+      // Paparkan toast ralat
+      toast({
+        title: "Ralat",
+        description: "Gagal menyimpan nota.",
+        variant: "destructive",
+      });
     } finally {
-      setIsPending(false)
+      setIsPending(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add Note to Saved Recipe</DialogTitle>
+          <DialogTitle>Tambah Nota Pada Resipi</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <Textarea
-            placeholder="Add your cooking notes, modifications, or reminders..."
+            placeholder="Masukkan nota memasak, ubahsuaian, atau peringatan anda..."
             value={note}
             onChange={(e) => setNote(e.target.value)}
             className="min-h-[150px]"
@@ -56,16 +75,13 @@ export function AddNoteModal({
             onClick={() => onOpenChange(false)}
             disabled={isPending}
           >
-            Cancel
+            Batal
           </Button>
-          <Button 
-            onClick={handleSave}
-            disabled={isPending}
-          >
-            Save Note
+          <Button onClick={handleSave} disabled={isPending}>
+            Simpan Nota
           </Button>
         </div>
       </DialogContent>
     </Dialog>
-  )
-} 
+  );
+}

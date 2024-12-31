@@ -1,15 +1,15 @@
-'use server'
+"use server";
 
-import { auth } from "@/auth"
-import { prisma } from "@/lib/prisma"
-import { revalidatePath } from "next/cache"
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
 export async function saveRecipe(recipeId: string) {
   try {
-    const session = await auth()
-    
+    const session = await auth();
+
     if (!session?.user?.id) {
-      throw new Error("Not authenticated")
+      throw new Error("Not authenticated");
     }
 
     // Create saved recipe entry
@@ -18,67 +18,99 @@ export async function saveRecipe(recipeId: string) {
         userId: session.user.id,
         recipeId: recipeId,
       },
-    })
+    });
 
-    revalidatePath('/resepi/[slug]')
-    revalidatePath('/account/saved')
-    
-    return { success: true, savedRecipeId: savedRecipe.id }
+    revalidatePath("/resepi/[slug]", "page");
+    revalidatePath("/account/saved", "page");
+
+    return { success: true, savedRecipeId: savedRecipe.id };
   } catch (error) {
-    console.error('Failed to save recipe:', error)
-    throw new Error('Failed to save recipe')
+    console.error("Failed to save recipe:", error);
+    throw new Error("Failed to save recipe");
   }
 }
 
 export async function unsaveRecipe(savedRecipeId: string) {
   try {
-    const session = await auth()
-    
+    const session = await auth();
+
     if (!session?.user?.id) {
-      throw new Error("Not authenticated")
+      throw new Error("Not authenticated");
     }
 
+    // Delete saved recipe entry
     await prisma.savedRecipe.delete({
       where: {
         id: savedRecipeId,
-        userId: session.user.id,
+        userId: session.user.id, // Ensure user owns this saved recipe
       },
-    })
+    });
 
-    revalidatePath('/resepi/[slug]')
-    revalidatePath('/account/saved')
-    
-    return { success: true }
+    revalidatePath("/resepi/[slug]", "page");
+    revalidatePath("/account/saved", "page");
+
+    return { success: true };
   } catch (error) {
-    console.error('Failed to unsave recipe:', error)
-    throw new Error('Failed to unsave recipe')
+    console.error("Failed to unsave recipe:", error);
+    throw new Error("Failed to unsave recipe");
   }
 }
 
-export async function updateSavedRecipeNotes(savedRecipeId: string, notes: string) {
+export async function updateSavedRecipeNotes(
+  savedRecipeId: string,
+  notes: string
+) {
   try {
-    const session = await auth()
-    
+    const session = await auth();
+
     if (!session?.user?.id) {
-      throw new Error("Not authenticated")
+      throw new Error("Not authenticated");
     }
 
     await prisma.savedRecipe.update({
       where: {
         id: savedRecipeId,
+        userId: session.user.id, // Ensure user owns this saved recipe
+      },
+      data: {
+        notes: notes,
+      },
+    });
+
+    revalidatePath("/resepi/[slug]", "page");
+    revalidatePath("/account/saved", "page");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update recipe notes:", error);
+    throw new Error("Failed to update recipe notes");
+  }
+}
+
+export async function saveRecipeNotes(savedRecipeId: string, notes: string) {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      throw new Error("Not authenticated");
+    }
+
+    const updatedRecipe = await prisma.savedRecipe.update({
+      where: {
+        id: savedRecipeId,
         userId: session.user.id,
       },
       data: {
-        notes: notes.trim() || null,
+        notes: notes,
       },
-    })
+    });
 
-    revalidatePath('/resepi/[slug]')
-    revalidatePath('/account/saved')
-    
-    return { success: true }
+    revalidatePath("/resepi/[slug]", "page");
+    revalidatePath("/account/saved", "page");
+
+    return { success: true, savedRecipe: updatedRecipe };
   } catch (error) {
-    console.error('Failed to update notes:', error)
-    throw new Error('Failed to update notes')
+    console.error("Failed to save recipe notes:", error);
+    throw new Error("Failed to save recipe notes");
   }
-} 
+}

@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { NewsletterDashboard } from "./newsletter-dashboard";
-import { DashboardShell } from "@/components/shell";
-import { DashboardHeader } from "@/components/dashboard-header";
+import { Newsletteradmin } from "./newsletter-admin";
+import { adminShell } from "@/components/shell";
+import { adminHeader } from "@/components/admin-header";
 import { LoadingPage } from "@/components/loading";
 
 export const metadata: Metadata = {
@@ -12,14 +12,14 @@ export const metadata: Metadata = {
 
 export default function NewsletterPage() {
   return (
-    <DashboardShell>
-      <DashboardHeader
+    <adminShell>
+      <adminHeader
         heading="Newsletter Management"
         text="Manage your newsletter subscribers"
       />
       <Suspense fallback={<LoadingPage />}>
-        <NewsletterDashboard />
+        <Newsletteradmin />
       </Suspense>
-    </DashboardShell>
+    </adminShell>
   );
 }

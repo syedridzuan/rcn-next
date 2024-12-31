@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { revalidatePath } from 'next/cache';
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 
 export async function PUT(
   request: NextRequest,
@@ -10,7 +10,7 @@ export async function PUT(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Use transaction to ensure data consistency
@@ -30,13 +30,13 @@ export async function PUT(
       }),
     ]);
 
-    revalidatePath(`/dashboard/recipes/${params.recipeId}/images`);
+    revalidatePath(`/admin/recipes/${params.recipeId}/images`);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Failed to set primary image:', error);
+    console.error("Failed to set primary image:", error);
     return NextResponse.json(
-      { error: 'Failed to set primary image' },
+      { error: "Failed to set primary image" },
       { status: 500 }
     );
   }
-} 
+}

@@ -62,8 +62,8 @@ export async function uploadImageAction(formData: FormData) {
   });
 
   // If needed, you can revalidate the page to show the new image:
-  // revalidatePath(`/dashboard/guides/${guideId}/images`);
-  // redirect(`/dashboard/guides/${guideId}/images`);
+  // revalidatePath(`/admin/guides/${guideId}/images`);
+  // redirect(`/admin/guides/${guideId}/images`);
 }
 
 export async function deleteImageAction(formData: FormData) {
@@ -80,5 +80,5 @@ export async function deleteImageAction(formData: FormData) {
   });
 
   // Use the actual guideId in the path
-  revalidatePath(`/dashboard/guides/${guideId}/images`);
+  revalidatePath(`/admin/guides/${guideId}/images`);
 }

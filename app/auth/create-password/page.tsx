@@ -93,7 +93,7 @@ export default function CreatePasswordPage() {
 
       // Optionally wait a moment for the user to see the toast
       setTimeout(() => {
-        // e.g., go to sign in page or user dashboard
+        // e.g., go to sign in page or user admin
         router.push(
           "/auth/signin?info=Kata laluan telah ditetapkan, sila log masuk."
         );

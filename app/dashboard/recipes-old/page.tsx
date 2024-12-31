@@ -1,36 +1,36 @@
-import { prisma } from '@/lib/db'
-import Link from 'next/link'
-import Image from 'next/image'
-import { formatDate } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { PlusCircle, Pencil, Trash2, ImageIcon } from 'lucide-react'
-import { DeleteRecipeButton } from '@/components/dashboard/delete-recipe-button'
+import { prisma } from "@/lib/db";
+import Link from "next/link";
+import Image from "next/image";
+import { formatDate } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { PlusCircle, Pencil, Trash2, ImageIcon } from "lucide-react";
+import { DeleteRecipeButton } from "@/components/admin/delete-recipe-button";
 
 async function getRecipes() {
   return await prisma.recipe.findMany({
     orderBy: {
-      createdAt: 'desc'
+      createdAt: "desc",
     },
     include: {
       category: true,
       _count: {
         select: {
-          comments: true
-        }
-      }
-    }
-  })
+          comments: true,
+        },
+      },
+    },
+  });
 }
 
 export default async function RecipesPage() {
-  const recipes = await getRecipes()
+  const recipes = await getRecipes();
 
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Recipes</h1>
         <Button asChild>
-          <Link href="/dashboard/recipes/new">
+          <Link href="/admin/recipes/new">
             <PlusCircle className="w-4 h-4 mr-2" />
             New Recipe
           </Link>
@@ -99,13 +99,13 @@ export default async function RecipesPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end gap-2">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/dashboard/recipes/${recipe.id}/edit`}>
+                        <Link href={`/admin/recipes/${recipe.id}/edit`}>
                           <Pencil className="w-4 h-4" />
                           <span className="sr-only">Edit</span>
                         </Link>
                       </Button>
                       <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/dashboard/recipes/${recipe.id}/images`}>
+                        <Link href={`/admin/recipes/${recipe.id}/images`}>
                           <ImageIcon className="w-4 h-4" />
                           <span className="sr-only">Images</span>
                         </Link>
@@ -120,5 +120,5 @@ export default async function RecipesPage() {
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}

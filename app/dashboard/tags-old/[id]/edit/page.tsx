@@ -1,24 +1,24 @@
-import { prisma } from '@/lib/db'
-import { updateTag } from '../../actions'
-import { notFound, redirect } from 'next/navigation'
+import { prisma } from "@/lib/db";
+import { updateTag } from "../../actions";
+import { notFound, redirect } from "next/navigation";
 
 interface EditTagPageProps {
-  params: { id: string }
+  params: { id: string };
 }
 
 export default async function EditTagPage({ params }: EditTagPageProps) {
-  const tag = await prisma.tag.findUnique({ where: { id: params.id } })
+  const tag = await prisma.tag.findUnique({ where: { id: params.id } });
   if (!tag) {
-    notFound()
+    notFound();
   }
 
   async function handleUpdateTag(formData: FormData) {
-    const name = formData.get('name') as string
+    const name = formData.get("name") as string;
     if (!name) {
-      throw new Error('Name is required')
+      throw new Error("Name is required");
     }
-    await updateTag(params.id, name)
-    redirect('/dashboard/tags')
+    await updateTag(params.id, name);
+    redirect("/admin/tags");
   }
 
   return (
@@ -31,7 +31,11 @@ export default async function EditTagPage({ params }: EditTagPageProps) {
         className="border w-full px-3 py-2"
       />
       <div className="flex justify-end gap-2">
-        <button type="button" onClick={() => history.back()} className="border px-4 py-2">
+        <button
+          type="button"
+          onClick={() => history.back()}
+          className="border px-4 py-2"
+        >
           Cancel
         </button>
         <button type="submit" className="bg-blue-600 text-white px-4 py-2">
@@ -39,5 +43,5 @@ export default async function EditTagPage({ params }: EditTagPageProps) {
         </button>
       </div>
     </form>
-  )
+  );
 }

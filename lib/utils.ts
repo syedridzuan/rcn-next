@@ -5,18 +5,26 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }).format(date)
+// lib/utils.ts
+
+// Overloaded or optional config
+export function formatDate(date: Date, options?: { time?: boolean }): string {
+  // E.g., if not provided, default is false => no time
+  const showTime = options?.time ?? false;
+
+  return new Intl.DateTimeFormat("ms-MY", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    ...(showTime && { hour: "numeric", minute: "numeric" }),
+  }).format(date);
 }
 
 export const slugify = (str: string) => {
   return str
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
 };
 
 export const calculateReadTime = (content: string) => {
@@ -27,5 +35,5 @@ export const calculateReadTime = (content: string) => {
 };
 
 export function absoluteUrl(path: string) {
-  return `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${path}`
+  return `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${path}`;
 }

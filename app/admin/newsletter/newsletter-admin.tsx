@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -9,33 +9,34 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Badge } from '@/components/ui/badge'
-import { useToast } from '@/components/ui/use-toast'
-import { MoreHorizontal, Download, Plus, Search } from 'lucide-react'
-import { format } from 'date-fns'
-import { AddSubscriberDialog } from './add-subscriber-dialog'
-import { useSubscribers } from './use-subscribers'
-import { EditSubscriberDialog } from './edit-subscriber-dialog'
-import { Subscriber } from '@/types/subscriber'
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
+import { MoreHorizontal, Download, Plus, Search } from "lucide-react";
+import { format } from "date-fns";
+import { AddSubscriberDialog } from "./add-subscriber-dialog";
+import { useSubscribers } from "./use-subscribers";
+import { EditSubscriberDialog } from "./edit-subscriber-dialog";
+import { Subscriber } from "@/types/subscriber";
 
-export function NewsletterDashboard() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterVerified, setFilterVerified] = useState<boolean | null>(null)
-  const [showAddDialog, setShowAddDialog] = useState(false)
-  const [selectedSubscriber, setSelectedSubscriber] = useState<Subscriber | null>(null)
-  const [showEditDialog, setShowEditDialog] = useState(false)
-  const { toast } = useToast()
-  const router = useRouter()
-  
+export function Newsletteradmin() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterVerified, setFilterVerified] = useState<boolean | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [selectedSubscriber, setSelectedSubscriber] =
+    useState<Subscriber | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+
   const {
     subscribers,
     isLoading,
@@ -43,49 +44,52 @@ export function NewsletterDashboard() {
     deleteSubscriber,
     exportSubscribers,
     refresh,
-  } = useSubscribers()
+  } = useSubscribers();
 
-  const filteredSubscribers = subscribers.filter(subscriber => {
-    const matchesSearch = subscriber.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterVerified === null || subscriber.isVerified === filterVerified
-    return matchesSearch && matchesFilter
-  })
+  const filteredSubscribers = subscribers.filter((subscriber) => {
+    const matchesSearch = subscriber.email
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesFilter =
+      filterVerified === null || subscriber.isVerified === filterVerified;
+    return matchesSearch && matchesFilter;
+  });
 
   const handleExport = async () => {
     try {
-      await exportSubscribers()
+      await exportSubscribers();
       toast({
-        title: 'Success',
-        description: 'Subscribers exported successfully',
-      })
+        title: "Success",
+        description: "Subscribers exported successfully",
+      });
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to export subscribers',
-        variant: 'destructive',
-      })
+        title: "Error",
+        description: "Failed to export subscribers",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteSubscriber(id)
+      await deleteSubscriber(id);
       toast({
-        title: 'Success',
-        description: 'Subscriber deleted successfully',
-      })
-      router.refresh()
+        title: "Success",
+        description: "Subscriber deleted successfully",
+      });
+      router.refresh();
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to delete subscriber',
-        variant: 'destructive',
-      })
+        title: "Error",
+        description: "Failed to delete subscriber",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   if (error) {
-    return <div>Error loading subscribers: {error.message}</div>
+    return <div>Error loading subscribers: {error.message}</div>;
   }
 
   return (
@@ -104,7 +108,12 @@ export function NewsletterDashboard() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
-                Filter: {filterVerified === null ? 'All' : filterVerified ? 'Verified' : 'Unverified'}
+                Filter:{" "}
+                {filterVerified === null
+                  ? "All"
+                  : filterVerified
+                  ? "Verified"
+                  : "Unverified"}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -148,17 +157,19 @@ export function NewsletterDashboard() {
               <TableRow key={subscriber.id}>
                 <TableCell>{subscriber.email}</TableCell>
                 <TableCell>
-                  <Badge variant={subscriber.isVerified ? 'default' : 'secondary'}>
-                    {subscriber.isVerified ? 'Verified' : 'Pending'}
+                  <Badge
+                    variant={subscriber.isVerified ? "default" : "secondary"}
+                  >
+                    {subscriber.isVerified ? "Verified" : "Pending"}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {format(new Date(subscriber.createdAt), 'MMM d, yyyy')}
+                  {format(new Date(subscriber.createdAt), "MMM d, yyyy")}
                 </TableCell>
                 <TableCell>
                   {subscriber.verifiedAt
-                    ? format(new Date(subscriber.verifiedAt), 'MMM d, yyyy')
-                    : '-'}
+                    ? format(new Date(subscriber.verifiedAt), "MMM d, yyyy")
+                    : "-"}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -170,8 +181,8 @@ export function NewsletterDashboard() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
                         onClick={() => {
-                          setSelectedSubscriber(subscriber)
-                          setShowEditDialog(true)
+                          setSelectedSubscriber(subscriber);
+                          setShowEditDialog(true);
                         }}
                       >
                         Edit
@@ -195,8 +206,8 @@ export function NewsletterDashboard() {
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSuccess={() => {
-          refresh()
-          setShowAddDialog(false)
+          refresh();
+          setShowAddDialog(false);
         }}
       />
 
@@ -204,13 +215,13 @@ export function NewsletterDashboard() {
         subscriber={selectedSubscriber}
         open={showEditDialog}
         onOpenChange={(open) => {
-          setShowEditDialog(open)
+          setShowEditDialog(open);
           if (!open) {
-            setSelectedSubscriber(null)
-            refresh()
+            setSelectedSubscriber(null);
+            refresh();
           }
         }}
       />
     </div>
-  )
-} 
+  );
+}

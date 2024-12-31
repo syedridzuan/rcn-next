@@ -15,16 +15,16 @@ export default function NewCategoryPage() {
     image?: File
   ) => {
     setIsSubmitting(true);
-    
+
     try {
       const result = await createCategory({
         ...data,
-        image
+        image,
       });
-      
+
       if (result.success) {
         toast.success("Category created successfully");
-        router.push("/dashboard/categories");
+        router.push("/admin/categories");
         router.refresh();
       } else {
         toast.error(result.message || "Failed to create category");
@@ -38,10 +38,7 @@ export default function NewCategoryPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <CategoryForm 
-        onSubmit={handleSubmit} 
-        isSubmitting={isSubmitting} 
-      />
+      <CategoryForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
     </div>
   );
 }

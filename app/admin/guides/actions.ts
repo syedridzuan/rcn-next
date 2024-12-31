@@ -33,7 +33,7 @@ export async function addGuideAction(formData: FormData) {
     data: { title, slug, content },
   });
 
-  revalidatePath("/dashboard/guides");
-  //redirect(`/dashboard/guides/${guide.id}/edit`);
+  revalidatePath("/admin/guides");
+  //redirect(`/admin/guides/${guide.id}/edit`);
   return guide.id;
 }

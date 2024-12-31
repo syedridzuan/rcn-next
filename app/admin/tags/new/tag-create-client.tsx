@@ -1,39 +1,39 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { useState } from "react"
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { createTagAction } from "../actions"
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { createTagAction } from "../actions";
 
 export default function TagCreateClient() {
-  const router = useRouter()
-  const [name, setName] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setIsSubmitting(true)
+    e.preventDefault();
+    setIsSubmitting(true);
 
     try {
       const result = await createTagAction({
-        name: name.trim()
-      })
+        name: name.trim(),
+      });
 
       if (!result.success) {
-        toast.error(result.message || "Failed to create tag")
-        return
+        toast.error(result.message || "Failed to create tag");
+        return;
       }
 
-      toast.success("Tag created successfully")
-      router.push("/dashboard/tags")
-      router.refresh()
+      toast.success("Tag created successfully");
+      router.push("/admin/tags");
+      router.refresh();
     } catch (error) {
-      toast.error("An unexpected error occurred")
+      toast.error("An unexpected error occurred");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
   }
 
@@ -53,5 +53,5 @@ export default function TagCreateClient() {
         {isSubmitting ? "Creating..." : "Create Tag"}
       </Button>
     </form>
-  )
+  );
 }

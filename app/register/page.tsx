@@ -1,7 +1,7 @@
-import { Metadata } from "next"
-import Link from "next/link"
-import { redirect } from "next/navigation"
-import { auth } from "@/auth"
+import { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 
 import {
   Card,
@@ -10,19 +10,19 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 
-import { RegisterForm } from "./register-form"
+import { RegisterForm } from "./register-form";
 
 export const metadata: Metadata = {
   title: "Cipta Akaun",
   description: "Cipta akaun baru untuk memulakan.",
-}
+};
 
 export default async function RegisterPage() {
-  const session = await auth()
+  const session = await auth();
   if (session?.user) {
-    redirect("/dashboard")
+    redirect("/admin");
   }
 
   return (
@@ -31,7 +31,7 @@ export default async function RegisterPage() {
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-semibold">Cipta akaun</CardTitle>
           <CardDescription className="text-sm text-muted-foreground">
-          Masukkan butiran anda di bawah untuk mencipta akaun anda.
+            Masukkan butiran anda di bawah untuk mencipta akaun anda.
           </CardDescription>
         </CardHeader>
 
@@ -52,6 +52,5 @@ export default async function RegisterPage() {
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }
-

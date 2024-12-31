@@ -1,50 +1,50 @@
-"use server"
+"use server";
 
-import { prisma } from "@/lib/db"
-import { revalidatePath } from "next/cache"
-import { auth } from "@/auth"
-import { slugify } from "@/lib/utils"
+import { prisma } from "@/lib/db";
+import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
+import { slugify } from "@/lib/utils";
 
 interface RecipeItemData {
-  content: string
+  content: string;
 }
 
 interface RecipeSectionData {
-  title: string
-  type: string
-  items: RecipeItemData[]
+  title: string;
+  type: string;
+  items: RecipeItemData[];
 }
 
 interface RecipeFormData {
-  title: string
-  description?: string
-  shortDescription?: string
-  language: string
-  cookTime: number
-  prepTime: number
-  servings: number
-  difficulty: string
-  categoryId: string
-  sections: RecipeSectionData[]
-  tips?: string[]
-  tags?: string[]
-  isEditorsPick: boolean
+  title: string;
+  description?: string;
+  shortDescription?: string;
+  language: string;
+  cookTime: number;
+  prepTime: number;
+  servings: number;
+  difficulty: string;
+  categoryId: string;
+  sections: RecipeSectionData[];
+  tips?: string[];
+  tags?: string[];
+  isEditorsPick: boolean;
 }
 
 // Basic create logic
 export async function createRecipe(data: RecipeFormData) {
-  const session = await auth()
+  const session = await auth();
   if (!session?.user?.id) {
-    throw new Error("Must be logged in to create recipe")
+    throw new Error("Must be logged in to create recipe");
   }
 
   // Build a slug from the title
-  const slug = slugify(data.title)
+  const slug = slugify(data.title);
 
   // Check if recipe with that slug already exists
-  const existingRecipe = await prisma.recipe.findUnique({ where: { slug } })
+  const existingRecipe = await prisma.recipe.findUnique({ where: { slug } });
   if (existingRecipe) {
-    throw new Error("A recipe with this title already exists")
+    throw new Error("A recipe with this title already exists");
   }
 
   const recipe = await prisma.recipe.create({
@@ -84,8 +84,8 @@ export async function createRecipe(data: RecipeFormData) {
         : undefined,
       isEditorsPick: data.isEditorsPick,
     },
-  })
+  });
 
-  revalidatePath("/dashboard/recipes")
-  return { success: true, id: recipe.id }
+  revalidatePath("/admin/recipes");
+  return { success: true, id: recipe.id };
 }

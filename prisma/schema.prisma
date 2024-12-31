@@ -50,12 +50,21 @@ enum RecipeSectionType {
   INSTRUCTIONS
 }
 
+enum ServingType {
+  PEOPLE
+  SLICES
+  PIECES
+  PORTIONS
+  BOWLS
+  GLASSES
+}
+
 model User {
   id              String      @id @default(cuid())
   name            String?
-  email           String     @unique
+  email           String      @unique
   emailVerified   DateTime?
-  username        String ?     @unique
+  username        String?     @unique
   password        String?
   image           String?
   role            Role?
@@ -83,6 +92,7 @@ model User {
   sessions      Session[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  UserLikes     UserLikes[]
 }
 
 model Category {
@@ -100,34 +110,50 @@ model Category {
 }
 
 model Recipe {
-  id               String           @id @default(cuid())
-  title            String
-  slug             String           @unique
-  description      String?
-  shortDescription String?
-  language         String           @default("en")
-  cookTime         Int
-  prepTime         Int
-  totalTime        Int?
-  servings         Int
-  difficulty       RecipeDifficulty @default(EASY)
-  status           RecipeStatus     @default(DRAFT)
-  categoryId       String
-  userId           String
-  category         Category         @relation(fields: [categoryId], references: [id])
-  user             User             @relation(fields: [userId], references: [id])
-  sections         RecipeSection[]
-  images           RecipeImage[]
-  comments         Comment[]
-  tips             RecipeTip[]
-  tags             Tag[]            @relation("RecipesOnTags")
-  isEditorsPick    Boolean          @default(false)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  reviews          Review[]
-  avgRating        Float?
-  numReviews       Int              @default(0)
-  savedBy          SavedRecipe[]
+  id                  String            @id @default(cuid())
+  title               String
+  slug                String            @unique
+  description         String?
+  shortDescription    String?
+  language            String            @default("en")
+  cookTime            Int
+  prepTime            Int
+  totalTime           Int?
+  servings            Int
+  difficulty          RecipeDifficulty  @default(EASY)
+  status              RecipeStatus      @default(DRAFT)
+  categoryId          String
+  userId              String
+  category            Category          @relation(fields: [categoryId], references: [id])
+  user                User              @relation(fields: [userId], references: [id])
+  sections            RecipeSection[]
+  images              RecipeImage[]
+  comments            Comment[]
+  tips                RecipeTip[]
+  tags                Tag[]             @relation("RecipesOnTags")
+  isEditorsPick       Boolean           @default(false)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  reviews             Review[]
+  avgRating           Float?
+  numReviews          Int               @default(0)
+  savedBy             SavedRecipe[]
+  // ↓↓↓ NEW columns for OpenAI suggestions ↓↓↓
+  openaiPrepTime      Int?
+  openaiPrepTimeText  String?
+  openaiCookTime      Int?
+  openaiCookTimeText  String?
+  openaiTotalTime     Int?
+  openaiTotalTimeText String?
+  openaiServings      Int?
+  openaiDifficulty    RecipeDifficulty?
+  openaiTags          Json? // or String[] if you prefer an array column
+  openaiServingType   ServingType?
+
+  // New fields for metrics
+  viewCount Int         @default(0)
+  likeCount Int         @default(0)
+  UserLikes UserLikes[]
 
   @@index([categoryId])
   @@index([userId])
@@ -181,7 +207,7 @@ model RecipeTip {
   recipeId  String
   recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
 }
 
 model RecipeImage {
@@ -296,7 +322,7 @@ model SavedRecipe {
   recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   notes     String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
 
   @@unique([userId, recipeId])
 }
@@ -355,6 +381,22 @@ model Subscription {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+model UserLikes {
+  id        String   @id @default(cuid())
+  userId    String
+  recipeId  String
+  createdAt DateTime @default(now())
+
+  // If you also want soft-deletion or toggling, you can add an 'active' boolean
+  active Boolean @default(true)
+
+  // relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recipeId])
 }
 
 enum SubscriptionPlan {

@@ -1,13 +1,13 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import * as z from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -15,71 +15,71 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { toast } from '@/components/ui/use-toast'
+} from "@/components/ui/form";
+import { toast } from "@/components/ui/use-toast";
 
 const formSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  slug: z.string().min(1, 'Slug is required'),
+  title: z.string().min(1, "Title is required"),
+  slug: z.string().min(1, "Slug is required"),
   content: z.string(),
-})
+});
 
-type FormData = z.infer<typeof formSchema>
+type FormData = z.infer<typeof formSchema>;
 
 export function NewGuideForm() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: '',
-      slug: '',
-      content: '',
+      title: "",
+      slug: "",
+      content: "",
     },
-  })
+  });
 
   const onTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const title = e.target.value
-    form.setValue('title', title)
+    const title = e.target.value;
+    form.setValue("title", title);
     // Auto-generate slug from title
     const slug = title
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)+/g, '')
-    form.setValue('slug', slug)
-  }
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+    form.setValue("slug", slug);
+  };
 
   async function onSubmit(data: FormData) {
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      const response = await fetch('/api/guides', {
-        method: 'POST',
+      const response = await fetch("/api/guides", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to create guide')
+        throw new Error("Failed to create guide");
       }
 
-      const guide = await response.json()
-      router.push(`/dashboard/guides/${guide.id}/edit`)
+      const guide = await response.json();
+      router.push(`/admin/guides/${guide.id}/edit`);
       toast({
-        title: 'Success',
-        description: 'Guide created successfully',
-      })
+        title: "Success",
+        description: "Guide created successfully",
+      });
     } catch (error) {
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to create guide',
-      })
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create guide",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -93,8 +93,8 @@ export function NewGuideForm() {
             <FormItem>
               <FormLabel>Title</FormLabel>
               <FormControl>
-                <Input 
-                  {...field} 
+                <Input
+                  {...field}
                   onChange={onTitleChange}
                   placeholder="Enter guide title"
                 />
@@ -110,10 +110,7 @@ export function NewGuideForm() {
             <FormItem>
               <FormLabel>Slug</FormLabel>
               <FormControl>
-                <Input 
-                  {...field} 
-                  placeholder="guide-url-slug"
-                />
+                <Input {...field} placeholder="guide-url-slug" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -126,8 +123,8 @@ export function NewGuideForm() {
             <FormItem className="col-span-2">
               <FormLabel>Content</FormLabel>
               <FormControl>
-                <Textarea 
-                  {...field} 
+                <Textarea
+                  {...field}
                   className="min-h-[500px] font-mono"
                   placeholder="Write your guide content here..."
                 />
@@ -137,9 +134,9 @@ export function NewGuideForm() {
           )}
         />
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? 'Creating...' : 'Create Guide'}
+          {isLoading ? "Creating..." : "Create Guide"}
         </Button>
       </form>
     </Form>
-  )
-} 
+  );
+}

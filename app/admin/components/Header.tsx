@@ -15,7 +15,7 @@ export default function Header() {
   return (
     <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-gray-100/40 px-6 dark:bg-gray-800/40">
       <div className="flex flex-1 items-center justify-between">
-        <h1 className="text-lg font-semibold">Admin Dashboard</h1>
+        <h1 className="text-lg font-semibold">Admin admin</h1>
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon">
             <Bell className="h-4 w-4" />
