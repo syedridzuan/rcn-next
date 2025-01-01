@@ -93,7 +93,6 @@ export async function generateMetadata({
   }
 
   const url = absoluteUrl(`/resepi/${recipe.slug}`);
-
   return {
     title: `${recipe.title} - Resepi`,
     description: recipe.description ?? "",
@@ -141,11 +140,10 @@ export default async function ResepePage({
   // LOGIC: prefer any openaiXxxTimeText if present
   // --------------------------------------------
   const finalPrepTimeText =
-    recipe.openaiPrepTimeText?.trim() || // 1. if we have openaiPrepTimeText
+    recipe.openaiPrepTimeText?.trim() ||
     (typeof recipe.openaiPrepTime === "number"
       ? `${recipe.openaiPrepTime} min`
-      : // fallback to old prepTime if openai is null
-      recipe.prepTime
+      : recipe.prepTime
       ? `${recipe.prepTime} min`
       : "");
 
@@ -164,9 +162,8 @@ export default async function ResepePage({
       : recipe.totalTime
       ? `${recipe.totalTime} min`
       : "N/A");
-  console.log("Final total time text:", finalTotalTimeText);
 
-  // We'll also pass numeric fallback for the meta cards
+  // numeric fallback for meta cards
   const finalPrepTimeNum =
     typeof recipe.openaiPrepTime === "number"
       ? recipe.openaiPrepTime
@@ -190,6 +187,23 @@ export default async function ResepePage({
   const primaryImage =
     recipe.images.find((img) => img.isPrimary) || recipe.images[0];
 
+  // Build a final "display tags" array:
+  // If recipe.tags is non-empty, use that
+  // else if openaiTags is an array of strings, show them as fallback
+  let finalDisplayTags: Array<{ name: string; slug?: string }> = [];
+  if (recipe.tags && recipe.tags.length > 0) {
+    // Use real DB tags
+    finalDisplayTags = recipe.tags.map((tag) => ({
+      name: tag.name,
+      slug: tag.slug,
+    }));
+  } else if (Array.isArray(recipe.openaiTags)) {
+    // fallback to openaiTags (strings)
+    finalDisplayTags = recipe.openaiTags.map((tagStr: string) => ({
+      name: tagStr,
+    }));
+  }
+
   // JSON-LD data for SEO
   const structuredData = {
     "@context": "https://schema.org",
@@ -202,7 +216,6 @@ export default async function ResepePage({
       name: recipe.user?.name || "Anonymous",
     },
     datePublished: recipe.createdAt?.toISOString(),
-    // for SEO, we just store numeric minutes if we have them
     prepTime: finalPrepTimeNum ? `PT${finalPrepTimeNum}M` : undefined,
     cookTime: finalCookTimeNum ? `PT${finalCookTimeNum}M` : undefined,
     totalTime: finalTotalTimeNum ? `PT${finalTotalTimeNum}M` : undefined,
@@ -335,30 +348,77 @@ export default async function ResepePage({
             cookTime={finalCookTimeNum}
             cookTimeText={finalCookTimeText}
             totalTime={finalTotalTimeNum}
-            totalTimeText={finalTotalTimeText} // ← NEW PROP
+            totalTimeText={finalTotalTimeText}
             servings={finalServings}
             servingType={finalServingType}
           />
         </div>
 
-        {/* Tag listing */}
-        {recipe.tags?.length ? (
+        {/* Tag listing - real DB tags OR openaiTags fallback */}
+        {/*
+  EXCERPT from app/(main)/(ads-enabled)/resepi/[slug]/page.tsx
+  Focusing on the finalDisplayTags rendering
+*/}
+        {finalDisplayTags.length > 0 && (
           <div className="mb-8">
             <div className="flex flex-wrap gap-2">
-              {recipe.tags.map((tag) => (
-                <Link
-                  key={tag.id}
-                  href={`/resepi/tag/${tag.slug}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors"
-                >
-                  <Tag className="w-4 h-4" />
-                  <span>{tag.name}</span>
-                </Link>
-              ))}
+              {finalDisplayTags.map((tag, idx) => {
+                // If real DB tag has a slug, we link to /resepi/tag/[slug]
+                if (tag.slug) {
+                  return (
+                    <Link
+                      key={tag.slug}
+                      href={`/resepi/tag/${tag.slug}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                         text-sm bg-orange-100 text-orange-700
+                         hover:bg-orange-200 transition-colors
+                         cursor-pointer focus:outline-none focus:ring-2
+                         focus:ring-orange-300 focus:ring-offset-1 focus:ring-offset-white"
+                    >
+                      <Tag className="w-4 h-4" />
+                      <span>{tag.name}</span>
+                    </Link>
+                  );
+                }
+
+                // Fallback: If this tag came from openaiTags, it won't have a slug in DB.
+                // Link it to a search page so at least the user can attempt to find matching recipes:
+                if (tag.name) {
+                  const searchParam = encodeURIComponent(
+                    tag.name.toLowerCase()
+                  );
+                  return (
+                    <Link
+                      key={`openai-${idx}`}
+                      href={`/resepi/cari?keyword=${searchParam}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                         text-sm bg-orange-100 text-orange-700
+                         hover:bg-orange-200 transition-colors
+                         cursor-pointer focus:outline-none focus:ring-2
+                         focus:ring-orange-300 focus:ring-offset-1 focus:ring-offset-white"
+                    >
+                      <Tag className="w-4 h-4" />
+                      <span>{tag.name}</span>
+                    </Link>
+                  );
+                }
+
+                // If there's no name and no slug, fallback to non-clickable text
+                return (
+                  <span
+                    key={`filler-${idx}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                       text-sm bg-orange-100 text-orange-700
+                       cursor-default select-text"
+                  >
+                    <Tag className="w-4 h-4" />
+                    <span>Unlabeled</span>
+                  </span>
+                );
+              })}
             </div>
           </div>
-        ) : null}
-
+        )}
         <div className="space-y-8">
           {/* Ingredients & Instructions */}
           <RecipeSections

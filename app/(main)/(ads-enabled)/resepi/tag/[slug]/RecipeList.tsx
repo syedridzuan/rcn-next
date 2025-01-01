@@ -1,45 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
-/**
- * You can adapt these fields to match your actual recipe structure.
- */
+interface RecipeImageLite {
+  id: string;
+  url: string;
+  isPrimary: boolean;
+}
+
 interface RecipeLite {
   id: string;
   title: string;
   slug: string;
   shortDescription?: string | null;
+  images?: RecipeImageLite[]; // <-- minimal fields for images
 }
 
 interface RecipeListProps {
-  /** The array of recipes to display. */
   recipes: RecipeLite[];
-
-  /** Which tag slug is being displayed. */
   tagSlug: string;
-
-  /** The current page number. */
   currentPage: number;
-
-  /** Total number of pages. */
   totalPages: number;
 }
 
-/**
- * Renders a grid of recipes + pagination controls,
- * separate from your data fetching logic in `page.tsx`.
- */
 export function RecipeList({
   recipes,
   tagSlug,
   currentPage,
   totalPages,
 }: RecipeListProps) {
-  // Optional: page size (if needed for UI).
-  // const PAGE_SIZE = 10;
+  // If needed: page size, e.g. 10
 
   return (
     <div>
@@ -49,21 +41,41 @@ export function RecipeList({
 
       {/* Recipe Grid */}
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {recipes.map((recipe) => (
-          <div key={recipe.id} className="border rounded p-2">
-            <h2 className="text-lg font-semibold">
-              <Link href={`/resepi/${recipe.slug}`} className="hover:underline">
-                {recipe.title}
-              </Link>
-            </h2>
-            {recipe.shortDescription && (
-              <p className="text-sm text-gray-600 mt-1 line-clamp-3">
-                {recipe.shortDescription}
-              </p>
-            )}
-            {/* Optionally display created date, rating, etc. */}
-          </div>
-        ))}
+        {recipes.map((recipe) => {
+          const imageUrl = recipe.images?.[0]?.url ?? ""; // fallback if no image
+
+          return (
+            <div key={recipe.id} className="border rounded p-2">
+              {/* Thumbnail */}
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={`Thumbnail for ${recipe.title}`}
+                  className="w-full h-40 object-cover mb-2 rounded"
+                />
+              ) : (
+                <div className="w-full h-40 bg-gray-200 mb-2 rounded flex items-center justify-center text-sm text-gray-500">
+                  Tiada Gambar
+                </div>
+              )}
+
+              <h2 className="text-lg font-semibold">
+                <Link
+                  href={`/resepi/${recipe.slug}`}
+                  className="hover:underline"
+                >
+                  {recipe.title}
+                </Link>
+              </h2>
+
+              {recipe.shortDescription && (
+                <p className="text-sm text-gray-600 mt-1 line-clamp-3">
+                  {recipe.shortDescription}
+                </p>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Pagination Controls */}

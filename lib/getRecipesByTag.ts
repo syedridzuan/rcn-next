@@ -1,60 +1,73 @@
 // lib/getRecipesByTag.ts
+
 import { prisma } from "@/lib/db";
 
-// Customize pageSize (e.g. 10) to your preference
-const PAGE_SIZE = 10;
-
-interface GetRecipesByTagParams {
-  slug: string;
-  page?: number;
-}
-
+/**
+ * Retrieve paginated recipes that match a given tag slug.
+ *
+ * @param slug       - The slug of the tag (e.g., "kuih-muih", "pedas")
+ * @param page       - The current page number (defaults to 1)
+ * @param pageSize   - Number of recipes per page (defaults to 10)
+ * @returns An object containing:
+ *           { recipes: Recipe[], totalCount: number }
+ */
 export async function getRecipesByTag({
   slug,
   page = 1,
-}: GetRecipesByTagParams) {
-  // Calculate skip/offset for pagination
-  const skip = (page - 1) * PAGE_SIZE;
+  pageSize = 10,
+}: {
+  slug: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  // Calculate pagination offsets
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
 
-  // 1. Find Tag record by slug
-  const tag = await prisma.tag.findUnique({
+  // 1. Query the tag to get its ID
+  const tagRecord = await prisma.tag.findUnique({
     where: { slug },
     select: { id: true },
   });
-  if (!tag) return { recipes: [], totalCount: 0 };
 
-  // 2. Find all recipes with this tag
+  // If no such tag exists, return empty results
+  if (!tagRecord) {
+    return { recipes: [], totalCount: 0 };
+  }
+
+  // 2. Now find recipes that have that tag
   const [recipes, totalCount] = await Promise.all([
     prisma.recipe.findMany({
       where: {
         tags: {
-          some: {
-            id: tag.id,
+          some: { id: tagRecord.id },
+        },
+        // e.g. Only published recipes, if you use a status field:
+        // status: "PUBLISHED",
+      },
+      // Include images so you can display a thumbnail
+      // Adjust fields as needed (url, alt, isPrimary, etc.)
+      include: {
+        images: {
+          select: {
+            id: true,
+            url: true,
+            alt: true,
+            isPrimary: true,
           },
         },
-        status: "PUBLISHED", // or whichever status means "visible"
-      },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        shortDescription: true,
-        // Add other fields as needed
-        createdAt: true,
-        // e.g. rating or image
       },
       orderBy: { createdAt: "desc" },
       skip,
-      take: PAGE_SIZE,
+      take,
     }),
+
     prisma.recipe.count({
       where: {
         tags: {
-          some: {
-            id: tag.id,
-          },
+          some: { id: tagRecord.id },
         },
-        status: "PUBLISHED",
+        // status: "PUBLISHED",
       },
     }),
   ]);
