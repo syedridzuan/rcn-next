@@ -15,14 +15,15 @@ import {
   Mail,
   ShieldAlert,
   Book,
+  DollarSign,
   // Add any icons you prefer for these items
 } from "lucide-react";
 
 const sidebarItems = [
   {
-    href: "/admin",
-    icon: LayoutDashboard,
-    label: "admin",
+    href: "/admin/subscriptions",
+    icon: DollarSign,
+    label: "Subscriptions",
   },
   {
     href: "/admin/categories",
