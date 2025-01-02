@@ -10,8 +10,10 @@ export default async function RecipesPage() {
     select: {
       id: true,
       title: true,
+      slug: true,
       difficulty: true,
       status: true,
+      createdAt: true,
       updatedAt: true,
       isEditorsPick: true,
       images: true,

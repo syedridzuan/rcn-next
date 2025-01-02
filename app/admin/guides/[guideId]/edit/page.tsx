@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { EditGuideForm } from "./edit-guide-form";
-import { adminShell } from "@/components/shell";
-import { adminHeader } from "@/components/admin-header";
+import { DashboardShell } from "@/components/shell";
+import { DashboardHeader } from "@/components/dashboard-header";
 import { LoadingPage } from "@/components/loading";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
@@ -56,8 +56,8 @@ export default async function EditGuidePage({ params }: EditGuidePageProps) {
   const guide = await getGuide(Promise.resolve(params.guideId));
 
   return (
-    <adminShell>
-      <adminHeader
+    <DashboardShell>
+      <DashboardHeader
         heading="Edit Guide"
         text="Make changes to your guide content"
       >
@@ -67,12 +67,12 @@ export default async function EditGuidePage({ params }: EditGuidePageProps) {
             Manage Images
           </Button>
         </Link>
-      </adminHeader>
+      </DashboardHeader>
       <div className="grid gap-8">
         <Suspense fallback={<LoadingPage />}>
           <EditGuideForm guide={guide} />
         </Suspense>
       </div>
-    </adminShell>
+    </DashboardShell>
   );
 }

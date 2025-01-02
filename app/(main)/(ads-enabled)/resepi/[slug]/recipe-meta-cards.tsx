@@ -10,12 +10,12 @@ interface RecipeMetaCardsProps {
   cookTime: number | null;
   cookTimeText?: string;
   totalTime: number | null;
-  totalTimeText?: string; // ← NEW
+  totalTimeText?: string; // ← Possibly containing text like "Overnight + 30 min"
   servings: number | null;
   servingType?: ServingType;
 }
 
-// Utility for numeric minutes -> "X jam Y minit"
+// Simple numeric-to-text converter for minutes → "X jam Y minit"
 function formatTime(minutes: number): string {
   if (minutes < 60) {
     return `${minutes} minit`;
@@ -34,7 +34,7 @@ export function RecipeMetaCards({
   cookTime,
   cookTimeText,
   totalTime,
-  totalTimeText, // ← NEW
+  totalTimeText,
   servings,
   servingType = "PEOPLE",
 }: RecipeMetaCardsProps) {
@@ -42,7 +42,7 @@ export function RecipeMetaCards({
   let displayPrep = "N/A";
   if (prepTimeText && prepTimeText.trim() !== "") {
     displayPrep = prepTimeText;
-  } else if (prepTime !== null) {
+  } else if (prepTime !== null && prepTime > 0) {
     displayPrep = formatTime(prepTime);
   }
 
@@ -50,20 +50,20 @@ export function RecipeMetaCards({
   let displayCook = "N/A";
   if (cookTimeText && cookTimeText.trim() !== "") {
     displayCook = cookTimeText;
-  } else if (cookTime !== null) {
+  } else if (cookTime !== null && cookTime > 0) {
     displayCook = formatTime(cookTime);
   }
 
   // ----- Total Time -----
   let displayTotal = "N/A";
   if (totalTimeText && totalTimeText.trim() !== "") {
-    displayTotal = totalTimeText; // ← PRIORITIZE ANY TEXT
+    displayTotal = totalTimeText;
   } else if (typeof totalTime === "number" && totalTime > 0) {
-    displayTotal = formatTime(totalTime); // numeric fallback
+    displayTotal = formatTime(totalTime);
   }
 
   // ----- Servings -----
-  const displayServings = servings !== null ? servings : "?";
+  const displayServings = servings && servings > 0 ? servings : "?";
   let displayServingType = "orang"; // default Malay label
 
   switch (servingType) {

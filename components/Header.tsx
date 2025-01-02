@@ -16,17 +16,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface DashboardHeaderProps {
-  heading: string;
-  text?: string;
-  children?: React.ReactNode;
-}
-
 export function DashboardHeader({
   heading,
   text,
   children,
-}: DashboardHeaderProps) {
+}: {
+  heading: string;
+  text?: string;
+  children?: React.ReactNode;
+}) {
   return (
     <div className="flex items-center justify-between px-2">
       <div className="grid gap-1">
@@ -79,8 +77,8 @@ export default function Header() {
               <Search className="h-4 w-4" />
             </Link>
 
-            {/* If user is logged in, show "Langganan Saya" + profile dropdown */}
             {session ? (
+              /* === AUTHENTICATED USER === */
               <>
                 {/* Langganan button */}
                 <Link
@@ -90,6 +88,7 @@ export default function Header() {
                   Langganan Saya
                 </Link>
 
+                {/* Profile dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex items-center space-x-2 hover:text-orange-600 transition-colors">
                     <Avatar className="h-8 w-8">
@@ -133,13 +132,21 @@ export default function Header() {
                 </DropdownMenu>
               </>
             ) : (
-              /* If user is NOT logged in, just show "Log Masuk" button */
-              <button
-                onClick={() => signIn()}
-                className="text-gray-600 hover:text-orange-600 transition-colors text-sm"
-              >
-                Log Masuk
-              </button>
+              /* === UNAUTHENTICATED USER === */
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => signIn()}
+                  className="text-sm text-gray-600 hover:text-orange-600 transition-colors"
+                >
+                  Log Masuk
+                </button>
+                <Link
+                  href="/auth/register"
+                  className="text-sm text-gray-600 hover:text-orange-600 transition-colors"
+                >
+                  Daftar Akaun
+                </Link>
+              </div>
             )}
           </nav>
 
@@ -175,9 +182,17 @@ export default function Header() {
               Kategori
             </Link>
 
+            {/* Mobile Search Link */}
+            <Link
+              href="/cari"
+              className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+            >
+              Cari
+            </Link>
+
             {session ? (
+              /* === AUTHENTICATED (Mobile) === */
               <>
-                {/* Mobile "Langganan Saya" button */}
                 <Link
                   href="/account/subscriptions"
                   className="block py-2 px-4 text-sm bg-orange-500 text-white rounded-full w-fit mx-4 my-2 hover:bg-orange-600 transition-colors"
@@ -185,7 +200,7 @@ export default function Header() {
                   Langganan Saya
                 </Link>
 
-                <div className="py-2 px-4 text-gray-600 border-t border-gray-100 mt-2">
+                <div className="py-2 px-4 text-gray-600 border-t border-gray-100 mt-2 text-sm">
                   Selamat datang, {session.user?.name}
                 </div>
                 <Link
@@ -208,12 +223,21 @@ export default function Header() {
                 </button>
               </>
             ) : (
-              <button
-                onClick={() => signIn()}
-                className="block w-full text-left py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
-              >
-                Log Masuk
-              </button>
+              /* === UNAUTHENTICATED (Mobile) === */
+              <>
+                <button
+                  onClick={() => signIn()}
+                  className="block w-full text-left py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  Log Masuk
+                </button>
+                <Link
+                  href="/auth/register"
+                  className="block py-2 px-4 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  Daftar Akaun
+                </Link>
+              </>
             )}
           </nav>
         )}

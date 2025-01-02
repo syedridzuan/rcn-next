@@ -1,33 +1,36 @@
 // app/(main)/(ads-enabled)/resepi/[slug]/page.tsx
-
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Tag, Eye as EyeIcon } from "lucide-react";
 import { Suspense } from "react";
 import { prisma } from "@/lib/db";
+import { auth } from "@/auth";
 import { absoluteUrl, formatDate } from "@/lib/utils";
+import { incrementRecipeView } from "@/lib/incrementViews";
+import { hasActiveSubscription } from "@/lib/subscription";
 import { Badge } from "@/components/ui/badge";
 import { PrintButton } from "@/components/recipes/print-button";
-import { RecipeMetaCards } from "./recipe-meta-cards";
 import { RecipeSections } from "@/components/RecipeSections";
 import { RecipeTips } from "@/components/RecipeTips";
 import { CommentsWrapper } from "@/components/comments/comments-wrapper";
 import { AuthorSpotlight } from "@/components/author-spotlight";
 import { LikeButtonRecipe } from "./LikeButtonRecipe";
 import { SaveRecipeButton } from "./SaveRecipeButton";
-import { incrementRecipeView } from "@/lib/incrementViews";
-import { hasActiveSubscription } from "@/lib/subscription";
-import { auth } from "@/auth";
+import { RecipeMetaCards } from "./recipe-meta-cards";
 
-import type { ServingType, RecipeDifficulty } from "@prisma/client";
+import { Eye as EyeIcon, Tag } from "lucide-react";
+import type { RecipeDifficulty, ServingType } from "@prisma/client";
 
 type PageParams = { slug: string };
 
-// A helper to load the recipe from the DB
+/**
+ * A helper to load the recipe from the DB
+ * including all relations you need in the UI.
+ */
 async function getRecipe(slug: string) {
   const session = await auth();
+
   return prisma.recipe.findUnique({
     where: { slug },
     include: {
@@ -61,7 +64,7 @@ async function getRecipe(slug: string) {
       _count: {
         select: { comments: true },
       },
-      // Pull the "saved" record if logged in
+      // If user is logged in, also load "saved" record
       savedBy: session?.user?.id
         ? {
             where: { userId: session.user.id },
@@ -73,7 +76,7 @@ async function getRecipe(slug: string) {
   });
 }
 
-// A small map for your difficulty enum
+/** Difficulty translations for display */
 const difficultyTranslations: Record<RecipeDifficulty, string> = {
   EASY: "Mudah",
   MEDIUM: "Sederhana",
@@ -81,18 +84,22 @@ const difficultyTranslations: Record<RecipeDifficulty, string> = {
   EXPERT: "Pakar",
 };
 
+/**
+ * Generate the SEO metadata
+ */
 export async function generateMetadata({
-  params: asyncParams,
+  params: promisedParams,
 }: {
   params: Promise<PageParams>;
 }): Promise<Metadata> {
-  const { slug } = await asyncParams;
+  const { slug } = await promisedParams;
   const recipe = await getRecipe(slug);
   if (!recipe) {
     return { title: "Resepi Tidak Dijumpai" };
   }
 
   const url = absoluteUrl(`/resepi/${recipe.slug}`);
+
   return {
     title: `${recipe.title} - Resepi`,
     description: recipe.description ?? "",
@@ -112,99 +119,59 @@ export async function generateMetadata({
   };
 }
 
-export default async function ResepePage({
-  params: asyncParams,
+/**
+ * The main page component
+ */
+export default async function RecipePage({
+  params: promisedParams,
 }: {
   params: Promise<PageParams>;
 }) {
-  // 1) Await the dynamic route param
-  const { slug } = await asyncParams;
+  // 1) Obtain the slug
+  const { slug } = await promisedParams;
 
-  // 2) Load the recipe
+  // 2) Load the recipe from DB
   const recipe = await getRecipe(slug);
   if (!recipe) {
     notFound();
   }
 
-  // 3) Check subscription
+  // 3) Check if user is subscribed
   const session = await auth();
   let isSubscribed = false;
   if (session?.user?.id) {
     isSubscribed = await hasActiveSubscription(session.user.id);
   }
 
-  // 4) increment view count
+  // 4) Increment the view count
   await incrementRecipeView(recipe.id);
 
-  // --------------------------------------------
-  // LOGIC: prefer any openaiXxxTimeText if present
-  // --------------------------------------------
-  const finalPrepTimeText =
-    recipe.openaiPrepTimeText?.trim() ||
-    (typeof recipe.openaiPrepTime === "number"
-      ? `${recipe.openaiPrepTime} min`
-      : recipe.prepTime
-      ? `${recipe.prepTime} min`
-      : "");
+  // 5) Derive simple fallback text for times & difficulty
+  //    We do NOT reference openai columns here.
+  const finalPrepTime = recipe.prepTime || 0;
+  const finalCookTime = recipe.cookTime || 0;
+  const finalTotalTime = recipe.totalTime || 0;
+  const finalDifficulty = recipe.difficulty;
+  const finalServings = recipe.servings || 1;
+  const finalServingType: ServingType = recipe.servingType ?? "PEOPLE";
 
-  const finalCookTimeText =
-    recipe.openaiCookTimeText?.trim() ||
-    (typeof recipe.openaiCookTime === "number"
-      ? `${recipe.openaiCookTime} min`
-      : recipe.cookTime
-      ? `${recipe.cookTime} min`
-      : "");
+  // Build display text for your recipe meta
+  const prepTimeText = finalPrepTime > 0 ? `${finalPrepTime} min` : "N/A";
+  const cookTimeText = finalCookTime > 0 ? `${finalCookTime} min` : "N/A";
+  const totalTimeText = finalTotalTime > 0 ? `${finalTotalTime} min` : "N/A";
 
-  const finalTotalTimeText =
-    recipe.openaiTotalTimeText?.trim() ||
-    (typeof recipe.openaiTotalTime === "number"
-      ? `${recipe.openaiTotalTime} min`
-      : recipe.totalTime
-      ? `${recipe.totalTime} min`
-      : "N/A");
-
-  // numeric fallback for meta cards
-  const finalPrepTimeNum =
-    typeof recipe.openaiPrepTime === "number"
-      ? recipe.openaiPrepTime
-      : recipe.prepTime ?? null;
-
-  const finalCookTimeNum =
-    typeof recipe.openaiCookTime === "number"
-      ? recipe.openaiCookTime
-      : recipe.cookTime ?? null;
-
-  const finalTotalTimeNum =
-    typeof recipe.openaiTotalTime === "number"
-      ? recipe.openaiTotalTime
-      : recipe.totalTime ?? null;
-
-  const finalDifficulty = recipe.openaiDifficulty ?? recipe.difficulty;
-  const finalServings = recipe.openaiServings ?? recipe.servings;
-  const finalServingType: ServingType = recipe.openaiServingType ?? "PEOPLE";
-
-  // Grab the first (primary) image
+  // Decide which image is primary
   const primaryImage =
     recipe.images.find((img) => img.isPrimary) || recipe.images[0];
 
-  // Build a final "display tags" array:
-  // If recipe.tags is non-empty, use that
-  // else if openaiTags is an array of strings, show them as fallback
-  let finalDisplayTags: Array<{ name: string; slug?: string }> = [];
-  if (recipe.tags && recipe.tags.length > 0) {
-    // Use real DB tags
-    finalDisplayTags = recipe.tags.map((tag) => ({
-      name: tag.name,
-      slug: tag.slug,
-    }));
-  } else if (Array.isArray(recipe.openaiTags)) {
-    // fallback to openaiTags (strings)
-    finalDisplayTags = recipe.openaiTags.map((tagStr: string) => ({
-      name: tagStr,
-    }));
-  }
+  // Build final display tags from real DB tags
+  // (If you previously used openaiTags as fallback, we skip that now.)
+  const finalDisplayTags = recipe.tags.map((tag) => ({
+    name: tag.name,
+    slug: tag.slug,
+  }));
 
-  // JSON-LD data for SEO
+  // JSON-LD structured data
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Recipe",
@@ -216,9 +183,9 @@ export default async function ResepePage({
       name: recipe.user?.name || "Anonymous",
     },
     datePublished: recipe.createdAt?.toISOString(),
-    prepTime: finalPrepTimeNum ? `PT${finalPrepTimeNum}M` : undefined,
-    cookTime: finalCookTimeNum ? `PT${finalCookTimeNum}M` : undefined,
-    totalTime: finalTotalTimeNum ? `PT${finalTotalTimeNum}M` : undefined,
+    prepTime: finalPrepTime ? `PT${finalPrepTime}M` : undefined,
+    cookTime: finalCookTime ? `PT${finalCookTime}M` : undefined,
+    totalTime: finalTotalTime ? `PT${finalTotalTime}M` : undefined,
     recipeYield: finalServings,
     recipeCategory: recipe.category?.name,
     recipeCuisine: "Malaysian",
@@ -246,7 +213,7 @@ export default async function ResepePage({
       />
       <article className="container mx-auto px-4 py-8 max-w-4xl">
         <header className="mb-8">
-          {/* Image */}
+          {/* Main image */}
           {primaryImage && (
             <div className="relative aspect-video rounded-lg overflow-hidden mb-6">
               <Image
@@ -263,7 +230,7 @@ export default async function ResepePage({
             </div>
           )}
 
-          {/* Title & Difficulty */}
+          {/* Category + Difficulty */}
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-2">
               {recipe.category && (
@@ -279,24 +246,25 @@ export default async function ResepePage({
               )}
               <Badge
                 variant="outline"
-                className="text-sm md:text-base font-semibold px-3 py-1 bg-orange-50 text-orange-700 border-orange-200"
+                className="text-sm md:text-base font-semibold px-3 py-1
+                           bg-orange-50 text-orange-700 border-orange-200"
               >
                 {difficultyTranslations[finalDifficulty]}
               </Badge>
             </div>
 
+            {/* Title & Description */}
             <h1 className="text-4xl font-bold">{recipe.title}</h1>
             {recipe.description && (
               <div
                 className="text-gray-600 text-lg"
-                dangerouslySetInnerHTML={{
-                  __html: recipe.description.replace(/<\/p>/g, "</p>&nbsp;"),
-                }}
+                dangerouslySetInnerHTML={{ __html: recipe.description }}
               />
             )}
 
             {/* Author & Buttons */}
             <div className="flex items-center justify-between flex-wrap gap-4">
+              {/* Author info */}
               <div className="flex items-center gap-2">
                 {recipe.user?.image && (
                   <Image
@@ -313,6 +281,7 @@ export default async function ResepePage({
                 </div>
               </div>
 
+              {/* Like / Save / Print */}
               <div className="flex gap-2">
                 <LikeButtonRecipe recipeId={recipe.id} />
                 <SaveRecipeButton
@@ -325,7 +294,7 @@ export default async function ResepePage({
               </div>
             </div>
 
-            {/* Date + Views */}
+            {/* Date + ViewCount */}
             <div className="flex items-center gap-8 text-base text-gray-600 mt-2 font-medium">
               <span>
                 Diterbitkan pada {formatDate(recipe.createdAt, { time: false })}
@@ -340,115 +309,72 @@ export default async function ResepePage({
           </div>
         </header>
 
-        {/* Meta Cards */}
+        {/* Meta Cards: purely from real columns */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <RecipeMetaCards
-            prepTime={finalPrepTimeNum}
-            prepTimeText={finalPrepTimeText}
-            cookTime={finalCookTimeNum}
-            cookTimeText={finalCookTimeText}
-            totalTime={finalTotalTimeNum}
-            totalTimeText={finalTotalTimeText}
-            servings={finalServings}
+            prepTime={recipe.prepTime}
+            prepTimeText={prepTimeText}
+            cookTime={recipe.cookTime}
+            cookTimeText={cookTimeText}
+            totalTime={recipe.totalTime}
+            totalTimeText={totalTimeText}
+            servings={recipe.servings}
             servingType={finalServingType}
           />
         </div>
 
-        {/* Tag listing - real DB tags OR openaiTags fallback */}
-        {/*
-  EXCERPT from app/(main)/(ads-enabled)/resepi/[slug]/page.tsx
-  Focusing on the finalDisplayTags rendering
-*/}
+        {/* Tag listing - from real DB tags only */}
         {finalDisplayTags.length > 0 && (
           <div className="mb-8">
             <div className="flex flex-wrap gap-2">
-              {finalDisplayTags.map((tag, idx) => {
-                // If real DB tag has a slug, we link to /resepi/tag/[slug]
-                if (tag.slug) {
-                  return (
-                    <Link
-                      key={tag.slug}
-                      href={`/resepi/tag/${tag.slug}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                         text-sm bg-orange-100 text-orange-700
-                         hover:bg-orange-200 transition-colors
-                         cursor-pointer focus:outline-none focus:ring-2
-                         focus:ring-orange-300 focus:ring-offset-1 focus:ring-offset-white"
-                    >
-                      <Tag className="w-4 h-4" />
-                      <span>{tag.name}</span>
-                    </Link>
-                  );
-                }
-
-                // Fallback: If this tag came from openaiTags, it won't have a slug in DB.
-                // Link it to a search page so at least the user can attempt to find matching recipes:
-                if (tag.name) {
-                  const searchParam = encodeURIComponent(
-                    tag.name.toLowerCase()
-                  );
-                  return (
-                    <Link
-                      key={`openai-${idx}`}
-                      href={`/resepi/cari?keyword=${searchParam}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                         text-sm bg-orange-100 text-orange-700
-                         hover:bg-orange-200 transition-colors
-                         cursor-pointer focus:outline-none focus:ring-2
-                         focus:ring-orange-300 focus:ring-offset-1 focus:ring-offset-white"
-                    >
-                      <Tag className="w-4 h-4" />
-                      <span>{tag.name}</span>
-                    </Link>
-                  );
-                }
-
-                // If there's no name and no slug, fallback to non-clickable text
-                return (
-                  <span
-                    key={`filler-${idx}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                       text-sm bg-orange-100 text-orange-700
-                       cursor-default select-text"
-                  >
-                    <Tag className="w-4 h-4" />
-                    <span>Unlabeled</span>
-                  </span>
-                );
-              })}
+              {finalDisplayTags.map((tag) => (
+                <Link
+                  key={tag.slug}
+                  href={`/resepi/tag/${tag.slug}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                             text-sm bg-orange-100 text-orange-700
+                             hover:bg-orange-200 transition-colors
+                             cursor-pointer focus:outline-none focus:ring-2
+                             focus:ring-orange-300 focus:ring-offset-1 focus:ring-offset-white"
+                >
+                  <Tag className="w-4 h-4" />
+                  <span>{tag.name}</span>
+                </Link>
+              ))}
             </div>
           </div>
         )}
-        <div className="space-y-8">
-          {/* Ingredients & Instructions */}
-          <RecipeSections
-            sections={recipe.sections}
-            labels={{
-              ingredients: "Bahan-bahan",
-              instructions: "Cara Memasak",
-            }}
-          />
 
-          {/* Tips */}
-          {recipe.tips?.length ? (
-            <section className="mt-8">
-              <RecipeTips tips={recipe.tips} />
-            </section>
-          ) : null}
+        {/* Recipe Sections (INGREDIENTS & INSTRUCTIONS) */}
+        <RecipeSections
+          sections={recipe.sections}
+          labels={{
+            ingredients: "Bahan-bahan",
+            instructions: "Cara Memasak",
+          }}
+        />
 
-          {/* Author */}
-          <AuthorSpotlight user={recipe.user} />
-
-          {/* Comments */}
-          <section className="mt-12">
-            <Suspense fallback={<div>Loading comments...</div>}>
-              <CommentsWrapper
-                recipeId={recipe.id}
-                initialComments={recipe.comments}
-              />
-            </Suspense>
+        {/* Tips */}
+        {recipe.tips?.length ? (
+          <section className="mt-8">
+            <RecipeTips tips={recipe.tips} />
           </section>
-        </div>
+        ) : null}
+
+        {/* Author */}
+        <section className="mt-8">
+          <AuthorSpotlight user={recipe.user} />
+        </section>
+
+        {/* Comments */}
+        <section className="mt-12">
+          <Suspense fallback={<div>Loading comments...</div>}>
+            <CommentsWrapper
+              recipeId={recipe.id}
+              initialComments={recipe.comments}
+            />
+          </Suspense>
+        </section>
       </article>
     </>
   );

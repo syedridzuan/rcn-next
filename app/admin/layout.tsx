@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "../globals.css";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
+import { Toaster } from "@/components/ui/toaster"; // shadcn Toaster
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,6 +29,7 @@ export default function AdminLayout({
             </main>
           </div>
         </div>
+        <Toaster /> {/* Add Toaster here */}
       </body>
     </html>
   );

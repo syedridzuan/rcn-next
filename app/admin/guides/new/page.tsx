@@ -1,5 +1,5 @@
-import { adminShell } from "@/components/shell";
-import { adminHeader } from "@/components/admin-header";
+import { DashboardShell } from "@/components/shell";
+import { DashboardHeader } from "@/components/dashboard-header";
 import { NewGuideForm } from "./new-guide-form";
 
 export const metadata = {
@@ -9,14 +9,14 @@ export const metadata = {
 
 export default function NewGuidePage() {
   return (
-    <adminShell>
-      <adminHeader
+    <DashboardShell>
+      <DashboardHeader
         heading="Create New Guide"
         text="Add a new guide to your collection"
       />
       <div className="grid gap-8">
         <NewGuideForm />
       </div>
-    </adminShell>
+    </DashboardShell>
   );
 }

@@ -50,6 +50,19 @@ const sidebarItems = [
     icon: List,
     label: "Recipes",
   },
+
+  {
+    href: "/admin/recipes/ai-audit",
+    icon: List,
+    label: "Recipes AI Audit",
+  },
+
+  {
+    href: "/admin/recipes/metas",
+    icon: List,
+    label: "Recipes Metas Edit",
+  },
+
   {
     href: "/admin/tags",
     icon: Tag,

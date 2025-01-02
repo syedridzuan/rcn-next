@@ -67,7 +67,7 @@ model User {
   username        String?     @unique
   password        String?
   image           String?
-  role            Role?
+  role            Role        @default(USER)
   status          UserStatus?
   instagramHandle String?
   facebookHandle  String?
@@ -120,6 +120,7 @@ model Recipe {
   prepTime            Int
   totalTime           Int?
   servings            Int
+  servingType         ServingType?
   difficulty          RecipeDifficulty  @default(EASY)
   status              RecipeStatus      @default(DRAFT)
   categoryId          String
@@ -289,7 +290,7 @@ model Subscriber {
   id                String    @id @default(cuid())
   email             String    @unique
   isVerified        Boolean   @default(false)
-  verificationToken String?
+  verificationToken String?   @unique
   verifiedAt        DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt

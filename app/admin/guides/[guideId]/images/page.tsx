@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { adminShell } from "@/components/shell";
-import { adminHeader } from "@/components/admin-header";
+import { DashboardShell } from "@/components/shell";
+import { DashboardHeader } from "@/components/dashboard-header";
 import { LoadingPage } from "@/components/loading";
 import { ImageManager } from "./image-manager";
 import { prisma } from "@/lib/db";
@@ -43,7 +43,7 @@ export default async function GuideImagesPage({
   const guide = await getGuide(resolvedParams.guideId);
 
   return (
-    <adminShell>
+    <DashboardShell>
       <Breadcrumbs
         items={[
           { label: "Guides", href: "/admin/guides" },
@@ -51,7 +51,7 @@ export default async function GuideImagesPage({
           { label: "Images", href: `/admin/guides/${guide.id}/images` },
         ]}
       />
-      <adminHeader
+      <DashboardHeader
         heading="Guide Images"
         text={`Manage images for ${guide.title}`}
       />
@@ -60,6 +60,6 @@ export default async function GuideImagesPage({
           <ImageManager guideId={guide.id} initialImages={guide.images} />
         </Suspense>
       </div>
-    </adminShell>
+    </DashboardShell>
   );
 }

@@ -45,7 +45,7 @@ export default function SignInPage() {
           </Link>
 
           <Link
-            href="/register"
+            href="/auth/register"
             className="text-sm underline hover:text-primary"
           >
             Daftar akaun baharu
