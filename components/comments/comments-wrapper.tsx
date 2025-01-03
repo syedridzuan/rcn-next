@@ -86,10 +86,10 @@ export function CommentsWrapper({ recipeId }: CommentsWrapperProps) {
       {!session?.user && (
         <div className="space-y-2">
           <p className="text-sm text-gray-600">
-            You need to be logged in to post a comment.
+            Anda perlu log masuk untuk meninggalkan komen.
           </p>
           <Button variant="outline" onClick={() => signIn()}>
-            Log In
+            Log Masuk
           </Button>
         </div>
       )}

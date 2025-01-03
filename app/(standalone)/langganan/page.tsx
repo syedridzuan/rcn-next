@@ -2,12 +2,13 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useToast } from "@/components/ui/use-toast"; // Pastikan path ini betul
+import { useToast } from "@/components/ui/use-toast";
 
 export default function LanggananPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const { toast } = useToast();
 
@@ -15,10 +16,19 @@ export default function LanggananPage() {
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
-  // Jika pengguna sudah log masuk, halakan mereka terus ke halaman langganan
   useEffect(() => {
+    // Handle redirect reason
+    const reason = searchParams.get("reason");
+    if (reason === "members-only") {
+      toast({
+        title: "Kandungan Eksklusif",
+        description: "Sila langgan untuk mengakses kandungan ini.",
+        variant: "default",
+      });
+    }
+
+    // Handle authenticated users
     if (status === "authenticated") {
-      // Papar notifikasi (toast)
       toast({
         title: "Anda sudah log masuk",
         description: "Mengalihkan anda ke halaman langganan...",
@@ -30,11 +40,15 @@ export default function LanggananPage() {
 
       return () => clearTimeout(timer);
     }
-  }, [status, router, toast]);
+  }, [status, router, toast, searchParams]);
 
   const handleSubscribe = async () => {
     if (!email) {
-      alert("Sila masukkan emel anda terlebih dahulu.");
+      toast({
+        title: "Perhatian",
+        description: "Sila masukkan emel anda terlebih dahulu.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -48,7 +62,6 @@ export default function LanggananPage() {
         body: JSON.stringify({ email }),
       });
 
-      // 409 menandakan emel sudah wujud dalam rekod
       if (response.status === 409) {
         setCheckoutError("Emel telah digunakan. Sila log masuk.");
         return;
@@ -66,7 +79,6 @@ export default function LanggananPage() {
         throw new Error("URL Checkout Session tidak diterima.");
       }
 
-      // Teruskan ke Stripe Checkout
       window.location.href = url;
     } catch (error: any) {
       setCheckoutError(error.message);
@@ -160,7 +172,7 @@ export default function LanggananPage() {
             <input
               id="email"
               type="email"
-              placeholder="contoh: [email protected]"
+              placeholder="contoh: [email protected]"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={{

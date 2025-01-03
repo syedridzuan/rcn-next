@@ -1,6 +1,7 @@
 // app/(main)/(ads-enabled)/resepi/[slug]/page.tsx
+
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -8,7 +9,6 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/auth";
 import { absoluteUrl, formatDate } from "@/lib/utils";
 import { incrementRecipeView } from "@/lib/incrementViews";
-import { hasActiveSubscription } from "@/lib/subscription";
 import { Badge } from "@/components/ui/badge";
 import { PrintButton } from "@/components/recipes/print-button";
 import { RecipeSections } from "@/components/RecipeSections";
@@ -22,16 +22,19 @@ import { RecipeMetaCards } from "./recipe-meta-cards";
 import { Eye as EyeIcon, Tag } from "lucide-react";
 import type { RecipeDifficulty, ServingType } from "@prisma/client";
 
-type PageParams = { slug: string };
+// 1) Import your helper
+import { hasActiveSubscription } from "@/lib/subscription";
 
 /**
  * A helper to load the recipe from the DB
  * including all relations you need in the UI.
  */
 async function getRecipe(slug: string) {
+  // 1) We fetch the user session
   const session = await auth();
 
-  return prisma.recipe.findUnique({
+  // 2) Query the recipe from DB
+  const recipe = await prisma.recipe.findUnique({
     where: { slug },
     include: {
       sections: {
@@ -64,7 +67,6 @@ async function getRecipe(slug: string) {
       _count: {
         select: { comments: true },
       },
-      // If user is logged in, also load "saved" record
       savedBy: session?.user?.id
         ? {
             where: { userId: session.user.id },
@@ -74,6 +76,37 @@ async function getRecipe(slug: string) {
         : undefined,
     },
   });
+
+  // 3) If no recipe found, return null → leads to notFound()
+  if (!recipe) {
+    return null;
+  }
+
+  // 4) If the recipe is marked as membersOnly
+  if (recipe.membersOnly) {
+    console.log("Recipe is membersOnly, checking subscription...");
+    // Check if user is logged in and has active sub
+    let userHasActiveSub = false;
+    if (session?.user?.id) {
+      userHasActiveSub = await hasActiveSubscription(session.user.id);
+      console.log("User has active subscription:", userHasActiveSub);
+    }
+
+    // If userHasActiveSub is false, decide on your approach:
+    // Option A: return null so we do `notFound()`
+    // Option B: redirect to a subscription page
+    if (!userHasActiveSub) {
+      // e.g. Option A:
+      //return null;
+
+      // or Option B:
+      redirect("/langganan?reason=members-only");
+      return null;
+      // return null;
+    }
+  }
+
+  return recipe;
 }
 
 /** Difficulty translations for display */
@@ -90,7 +123,7 @@ const difficultyTranslations: Record<RecipeDifficulty, string> = {
 export async function generateMetadata({
   params: promisedParams,
 }: {
-  params: Promise<PageParams>;
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await promisedParams;
   const recipe = await getRecipe(slug);
@@ -119,35 +152,26 @@ export async function generateMetadata({
   };
 }
 
-/**
- * The main page component
- */
 export default async function RecipePage({
   params: promisedParams,
 }: {
-  params: Promise<PageParams>;
+  params: Promise<{ slug: string }>;
 }) {
   // 1) Obtain the slug
   const { slug } = await promisedParams;
 
-  // 2) Load the recipe from DB
+  // 2) Load the recipe from DB (with subscription check if membersOnly)
   const recipe = await getRecipe(slug);
+
+  // 3) If no recipe (either does not exist or membership blocked => null)
   if (!recipe) {
     notFound();
-  }
-
-  // 3) Check if user is subscribed
-  const session = await auth();
-  let isSubscribed = false;
-  if (session?.user?.id) {
-    isSubscribed = await hasActiveSubscription(session.user.id);
   }
 
   // 4) Increment the view count
   await incrementRecipeView(recipe.id);
 
-  // 5) Derive simple fallback text for times & difficulty
-  //    We do NOT reference openai columns here.
+  // 5) Derive fallback text for times & difficulty
   const finalPrepTime = recipe.prepTime || 0;
   const finalCookTime = recipe.cookTime || 0;
   const finalTotalTime = recipe.totalTime || 0;
@@ -165,7 +189,6 @@ export default async function RecipePage({
     recipe.images.find((img) => img.isPrimary) || recipe.images[0];
 
   // Build final display tags from real DB tags
-  // (If you previously used openaiTags as fallback, we skip that now.)
   const finalDisplayTags = recipe.tags.map((tag) => ({
     name: tag.name,
     slug: tag.slug,
@@ -288,7 +311,7 @@ export default async function RecipePage({
                   recipeId={recipe.id}
                   savedRecipeId={recipe.savedBy?.[0]?.id}
                   existingNote={recipe.savedBy?.[0]?.notes}
-                  isSubscribed={isSubscribed}
+                  isSubscribed={false}
                 />
                 <PrintButton label="Cetak Resepi" />
               </div>
@@ -309,7 +332,7 @@ export default async function RecipePage({
           </div>
         </header>
 
-        {/* Meta Cards: purely from real columns */}
+        {/* Meta Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <RecipeMetaCards
             prepTime={recipe.prepTime}
@@ -323,7 +346,7 @@ export default async function RecipePage({
           />
         </div>
 
-        {/* Tag listing - from real DB tags only */}
+        {/* Tags from real DB tags only */}
         {finalDisplayTags.length > 0 && (
           <div className="mb-8">
             <div className="flex flex-wrap gap-2">
@@ -363,7 +386,9 @@ export default async function RecipePage({
 
         {/* Author */}
         <section className="mt-8">
-          <AuthorSpotlight user={recipe.user} />
+          <Suspense fallback={<div>Loading author info...</div>}>
+            <AuthorSpotlight user={recipe.user} />
+          </Suspense>
         </section>
 
         {/* Comments */}

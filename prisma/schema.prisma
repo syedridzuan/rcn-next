@@ -115,6 +115,7 @@ model Recipe {
   slug                String            @unique
   description         String?
   shortDescription    String?
+  membersOnly         Boolean           @default(false)
   language            String            @default("en")
   cookTime            Int
   prepTime            Int
