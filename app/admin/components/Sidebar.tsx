@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
 
 // Import icons from lucide-react or your icon library of choice
 import {
@@ -46,24 +48,6 @@ const sidebarItems = [
     label: "Newsletter",
   },
   {
-    href: "/admin/recipes",
-    icon: List,
-    label: "Recipes",
-  },
-
-  {
-    href: "/admin/recipes/ai-audit",
-    icon: List,
-    label: "Recipes AI Audit",
-  },
-
-  {
-    href: "/admin/recipes/metas",
-    icon: List,
-    label: "Recipes Metas Edit",
-  },
-
-  {
     href: "/admin/tags",
     icon: Tag,
     label: "Tags",
@@ -72,6 +56,24 @@ const sidebarItems = [
     href: "/admin/users",
     icon: Users,
     label: "Users",
+  },
+];
+
+const recipeItems = [
+  {
+    href: "/admin/recipes",
+    icon: List,
+    label: "All Recipes",
+  },
+  {
+    href: "/admin/recipes/ai-audit",
+    icon: List,
+    label: "AI Audit",
+  },
+  {
+    href: "/admin/recipes/metas",
+    icon: List,
+    label: "Metas Edit",
   },
 ];
 
@@ -109,6 +111,42 @@ export default function Sidebar() {
                 </Link>
               </Button>
             ))}
+
+            {/* Recipe Section Collapsible */}
+            <Collapsible className="space-y-1">
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-between"
+                >
+                  <div className="flex items-center">
+                    <List className="mr-2 h-4 w-4" />
+                    <span>Recipes</span>
+                  </div>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-1">
+                {recipeItems.map((item) => (
+                  <Button
+                    key={item.href}
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "w-full justify-start pl-6",
+                      pathname === item.href && "bg-gray-200 dark:bg-gray-700"
+                    )}
+                  >
+                    <Link href={item.href}>
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  </Button>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         </ScrollArea>
       </div>
