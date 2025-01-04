@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { highlightSnippet } from "@/utils/highlightSnippet";
-import { isOlderThanOneWeek } from "@/lib/helpers/isOlderThanOneWeek";
 
 import LiveSearch from "./components/LiveSearch";
 
@@ -115,7 +114,8 @@ export default async function SearchRecipesPage({
         title: true,
         slug: true,
         shortDescription: true,
-        createdAt: true, // to check how old the recipe is
+        createdAt: true,
+        membersOnly: true,
         images: {
           where: { isPrimary: true },
           select: { url: true, thumbnailUrl: true },
@@ -130,12 +130,10 @@ export default async function SearchRecipesPage({
     prisma.recipe.count({ where: whereCondition }),
   ]);
 
-  // 6. Tapis resepi baru (< 1 minggu) jika user tiada langganan
-  //    (Ingat: ini 'in-memory' filter, so totalCount mungkin tidak sepadan)
+  // 6. Filter recipes based on subscription status
   const filteredRecipes = recipes.filter((r) => {
-    const isNew = !isOlderThanOneWeek(r.createdAt);
-    if (isNew && !userHasActiveSub) {
-      // Resepsi yang baru & user tak berbayar => jangan tunjuk
+    if (r.membersOnly && !userHasActiveSub) {
+      // Hide members-only recipes from non-subscribers
       return false;
     }
     return true;
@@ -258,6 +256,11 @@ export default async function SearchRecipesPage({
                   <Badge variant="outline" className="text-xs font-medium">
                     {recipe.difficulty}
                   </Badge>
+                  {recipe.membersOnly && (
+                    <Badge variant="secondary" className="text-xs font-medium">
+                      Ahli Sahaja
+                    </Badge>
+                  )}
                 </div>
               </div>
             );

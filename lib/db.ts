@@ -111,3 +111,36 @@ export async function getAllCategories() {
     await prisma.$disconnect();
   }
 }
+
+export async function getLatestRecipes() {
+  return prisma.recipe.findMany({
+    where: {
+      status: 'PUBLISHED',
+    },
+    include: {
+      images: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+    take: 12, // Limit to most recent 12 recipes
+  });
+}
+
+export async function getPopularRecipes(sortBy: "views" | "likes" = "views") {
+  return prisma.recipe.findMany({
+    where: {
+      status: "PUBLISHED",
+    },
+    include: {
+      images: true,
+    },
+    orderBy: {
+      ...(sortBy === "views" 
+        ? { viewCount: "desc" }
+        : { likeCount: "desc" }
+      ),
+    },
+    take: 12,
+  });
+}

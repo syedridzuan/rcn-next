@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface RecipeResult {
   id: string;
   slug: string;
   title: string;
   shortDescription: string | null;
+  membersOnly: boolean;
 }
 
 export default function LiveSearch() {
@@ -70,7 +72,7 @@ export default function LiveSearch() {
 
   return (
     <div className="p-4 space-y-3 max-w-md border rounded">
-      <h2 className="text-xl font-semibold">Debounced Search</h2>
+      <h2 className="text-xl font-semibold">Carian Live</h2>
 
       {/* Search Input */}
       <Input
@@ -87,19 +89,27 @@ export default function LiveSearch() {
       {/* Results List */}
       {results.length > 0 && (
         <ul className="mt-2 space-y-1">
-          {results.map((recipe) => (
-            <li key={recipe.id}>
-              <a
-                href={`/resepi/${recipe.slug}`}
-                className="text-blue-600 underline"
-              >
-                {recipe.title}
-              </a>
-              <p className="text-xs text-gray-600">
-                {recipe.shortDescription || "(Tiada ringkasan)"}
-              </p>
-            </li>
-          ))}
+          {results.map((recipe) => {
+            console.log('Recipe:', recipe);
+            return (
+              <li key={recipe.id}>
+                <a
+                  href={`/resepi/${recipe.slug}`}
+                  className="text-blue-600 underline"
+                >
+                  {recipe.title}
+                  {recipe.membersOnly && (
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      Ahli Sahaja
+                    </Badge>
+                  )}
+                </a>
+                <p className="text-xs text-gray-600">
+                  {recipe.shortDescription || "(Tiada ringkasan)"}
+                </p>
+              </li>
+            );
+          })}
         </ul>
       )}
 

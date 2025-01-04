@@ -56,11 +56,11 @@ export default function Header() {
           <nav className="hidden lg:flex items-center space-x-4">
             {/* Resipi Dropdown */}
             <Dropdown
-              title="Resipi"
+              title="Resepi"
               items={[
-                { label: "Semua Resipi", href: "/resipi" },
-                { label: "Resipi Terbaru", href: "/resipi/terbaru" },
-                { label: "Resipi Popular", href: "/resipi/popular" },
+                { label: "Semua Resipi", href: "/resepi" },
+                { label: "Resipi Terbaru", href: "/resepi/terbaru" },
+                { label: "Resipi Popular", href: "/resepi/popular" },
               ]}
               className="text-sm"
             />
@@ -70,7 +70,7 @@ export default function Header() {
 
             {/* Search icon */}
             <Link
-              href="/cari"
+              href="/resepi/cari"
               className="text-gray-600 hover:text-orange-600 transition-colors focus:outline-none"
               aria-label="Search recipes"
             >

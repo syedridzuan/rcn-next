@@ -24,6 +24,7 @@ import type { RecipeDifficulty, ServingType } from "@prisma/client";
 
 // 1) Import your helper
 import { hasActiveSubscription } from "@/lib/subscription";
+import { isOlderThanOneWeek } from "@/lib/helpers/isOlderThanOneWeek";
 
 /**
  * A helper to load the recipe from the DB
@@ -106,7 +107,20 @@ async function getRecipe(slug: string) {
     }
   }
 
-  return recipe;
+  let showFullRecipe = false;
+  if (session?.user?.id) {
+    showFullRecipe = await hasActiveSubscription(session.user.id);
+  }
+  
+  // Allow full access if recipe is older than a week
+  if (!showFullRecipe && recipe.createdAt) {
+    showFullRecipe = isOlderThanOneWeek(recipe.createdAt);
+  }
+
+  return {
+    ...recipe,
+    showFullRecipe,
+  };
 }
 
 /** Difficulty translations for display */
@@ -370,15 +384,31 @@ export default async function RecipePage({
 
         {/* Recipe Sections (INGREDIENTS & INSTRUCTIONS) */}
         <RecipeSections
-          sections={recipe.sections}
+          sections={recipe.sections.filter(section => 
+            recipe.showFullRecipe || section.type === "INGREDIENTS"
+          )}
           labels={{
             ingredients: "Bahan-bahan",
             instructions: "Cara Memasak",
           }}
         />
 
+        {!recipe.showFullRecipe && (
+          <div className="mt-8 p-4 bg-orange-50 rounded-lg text-center">
+            <p className="text-orange-800 font-medium">
+              Untuk melihat cara memasak penuh dan tips, sila langgani atau tunggu seminggu dari tarikh penerbitan.
+            </p>
+            <Link 
+              href="/langganan" 
+              className="mt-2 inline-block px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+            >
+              Langgani Sekarang
+            </Link>
+          </div>
+        )}
+
         {/* Tips */}
-        {recipe.tips?.length ? (
+        {recipe.tips?.length && recipe.showFullRecipe ? (
           <section className="mt-8">
             <RecipeTips tips={recipe.tips} />
           </section>

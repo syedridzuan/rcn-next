@@ -134,6 +134,7 @@ export default function LanggananPage() {
           </h3>
           <ul style={{ marginTop: "1rem", lineHeight: 1.6 }}>
             <li>✔ Bebas iklan</li>
+            <li>✔ Resepi Premium</li>
             <li>✔ Keutamaan respon untuk komen</li>
             <li>✔ Akses awal resepi terkini</li>
           </ul>

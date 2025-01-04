@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Recipe } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
-import { isOlderThanOneWeek } from "@/lib/helpers/isOlderThanOneWeek";
 
 /**
  * Extend the default Recipe type to ensure we have `createdAt`
@@ -17,6 +16,7 @@ interface LatestRecipe extends Recipe {
     mediumUrl: string;
     alt?: string | null;
   }[];
+  membersOnly: boolean;
 }
 
 interface LatestRecipesSectionProps {
@@ -34,14 +34,8 @@ export default function LatestRecipesSection({
   title = "Resepi Terbaru",
   hasActiveSubscription,
 }: LatestRecipesSectionProps) {
-  // If user does NOT have an active subscription,
-  // only show recipes older than 1 week.
-  const filteredRecipes = hasActiveSubscription
-    ? recipes
-    : recipes.filter((r) => {
-        if (!r.createdAt) return false;
-        return isOlderThanOneWeek(r.createdAt);
-      });
+  // Remove the filtering logic based on the subscription status
+  const filteredRecipes = recipes;
 
   return (
     <section className="mb-10">
@@ -71,6 +65,11 @@ export default function LatestRecipesSection({
                       fill
                       className="object-cover"
                     />
+                    {recipe.membersOnly && (
+                      <div className="absolute top-2 right-2 bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold z-10">
+                        Premium
+                      </div>
+                    )}
                   </div>
                 )}
 
