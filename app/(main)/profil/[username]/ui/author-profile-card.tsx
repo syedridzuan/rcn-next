@@ -4,7 +4,7 @@
 
 import Image from "next/image"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { Instagram, Globe, Facebook, Music2 } from "lucide-react"
+import { Instagram, Globe, Facebook, Music2, Youtube } from "lucide-react"
 
 interface AuthorProfileCardProps {
   user: {
@@ -16,6 +16,7 @@ interface AuthorProfileCardProps {
     instagramHandle: string | null
     facebookHandle: string | null
     tiktokHandle: string | null
+    youtubeHandle: string | null
     blogUrl: string | null
   }
 }
@@ -77,6 +78,17 @@ export function AuthorProfileCard({ user }: AuthorProfileCardProps) {
             >
               <Music2 className="w-4 h-4" />
               @{user.tiktokHandle}
+            </a>
+          )}
+          {user.youtubeHandle && (
+            <a
+              href={`https://www.youtube.com/@${user.youtubeHandle}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-gray-700 hover:text-orange-600 transition-colors"
+            >
+              <Youtube className="w-4 h-4" />
+              @{user.youtubeHandle}
             </a>
           )}
           {user.blogUrl && (

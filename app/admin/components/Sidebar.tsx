@@ -5,7 +5,11 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 
 // Import icons from lucide-react or your icon library of choice
@@ -66,6 +70,11 @@ const recipeItems = [
     label: "All Recipes",
   },
   {
+    href: "/admin/recipes/createfromjson",
+    icon: List,
+    label: "Create From JSON",
+  },
+  {
     href: "/admin/recipes/ai-audit",
     icon: List,
     label: "AI Audit",
@@ -74,6 +83,16 @@ const recipeItems = [
     href: "/admin/recipes/metas",
     icon: List,
     label: "Metas Edit",
+  },
+  {
+    href: "/admin/recipes/generate",
+    icon: List,
+    label: "Generate Recipe",
+  },
+  {
+    href: "/admin/recipes/drafts",
+    icon: List,
+    label: "Recipe's Drafts",
   },
 ];
 
@@ -101,7 +120,7 @@ export default function Sidebar() {
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "w-full justify-start",
+                  "w-full justify-start text-base",
                   pathname === item.href && "bg-gray-200 dark:bg-gray-700"
                 )}
               >
@@ -118,7 +137,7 @@ export default function Sidebar() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-full justify-between"
+                  className="w-full justify-between text-base"
                 >
                   <div className="flex items-center">
                     <List className="mr-2 h-4 w-4" />
@@ -135,7 +154,7 @@ export default function Sidebar() {
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      "w-full justify-start pl-6",
+                      "w-full justify-start pl-6 text-base",
                       pathname === item.href && "bg-gray-200 dark:bg-gray-700"
                     )}
                   >

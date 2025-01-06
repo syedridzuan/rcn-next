@@ -25,6 +25,11 @@ export default async function ProfilePage() {
       role: true,
       createdAt: true,
       updatedAt: true,
+      instagramHandle: true,
+      facebookHandle: true,
+      tiktokHandle: true,
+      youtubeHandle: true,
+      blogUrl: true,
     },
   })
 

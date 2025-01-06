@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Shell } from "@/components/shell"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { UserCircle, BookmarkIcon, Shield, ChevronRight } from "lucide-react"
+import { UserCircle, BookmarkIcon, Shield, ChevronRight, Bell, CreditCard } from "lucide-react"
 
 // Jenis bahagian akaun untuk organisasi lebih baik
 interface AccountSection {
@@ -18,11 +18,18 @@ interface AccountSection {
 // Definisi bahagian-bahagian akaun
 const accountSections: AccountSection[] = [
   {
-    title: "Profil & Tetapan",
+    title: "Profil",
     description: "Kemaskini maklumat peribadi anda dan imej profil.",
     href: "/account/profile",
     icon: UserCircle,
     buttonText: "Lihat & Sunting Profil",
+  },
+  {
+    title: "Notifikasi",
+    description: "Urus tetapan notifikasi anda.",
+    href: "/account/notifications",
+    icon: Bell,
+    buttonText: "Urus Notifikasi",
   },
   {
     title: "Resepi Disimpan",
@@ -36,7 +43,14 @@ const accountSections: AccountSection[] = [
     description: "Tukar kata laluan anda dan tingkatkan keselamatan akaun.",
     href: "/account/security",
     icon: Shield,
-    buttonText: "Kemaskini Kata Laluan",
+    buttonText: "Kemaskini Keselamatan",
+  },
+  {
+    title: "Langganan",
+    description: "Urus langganan dan kaedah pembayaran anda.",
+    href: "/account/subscriptions",
+    icon: CreditCard,
+    buttonText: "Urus Langganan",
   },
 ]
 

@@ -9,6 +9,7 @@ import {
   BookOpen,
   Facebook,
   Music4 as Tiktok,
+  Youtube,
 } from "lucide-react"
 
 interface UserProfile {
@@ -19,6 +20,7 @@ interface UserProfile {
   instagramHandle?: string
   facebookHandle?: string
   tiktokHandle?: string
+  youtubeHandle?: string
   blogUrl?: string
 }
 
@@ -97,6 +99,17 @@ export function AuthorSpotlight({ user }: AuthorSpotlightProps) {
               >
                 <Tiktok className="w-4 h-4 mr-1" />
                 @{user.tiktokHandle}
+              </a>
+            )}
+            {user.youtubeHandle && (
+              <a
+                href={`https://www.youtube.com/@${user.youtubeHandle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center hover:text-orange-600 transition-colors"
+              >
+                <Youtube className="w-4 h-4 mr-1" />
+                @{user.youtubeHandle}
               </a>
             )}
             {user.blogUrl && (

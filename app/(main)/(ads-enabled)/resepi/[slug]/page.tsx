@@ -61,6 +61,7 @@ async function getRecipe(slug: string) {
           image: true,
           instagramHandle: true,
           facebookHandle: true,
+          youtubeHandle: true,
           tiktokHandle: true,
           blogUrl: true,
         },

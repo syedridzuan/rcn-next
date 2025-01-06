@@ -6,9 +6,11 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 export const prisma =
   globalForPrisma.prisma ||
   new PrismaClient({
-    // log: ["query"], // optional for debugging
+    // Enable Prisma logs for debugging
+    log: ["query", "info", "warn", "error"],
   });
 
+// Ensure we only instantiate one Prisma Client in dev
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
@@ -115,13 +117,13 @@ export async function getAllCategories() {
 export async function getLatestRecipes() {
   return prisma.recipe.findMany({
     where: {
-      status: 'PUBLISHED',
+      status: "PUBLISHED",
     },
     include: {
       images: true,
     },
     orderBy: {
-      createdAt: 'desc',
+      createdAt: "desc",
     },
     take: 12, // Limit to most recent 12 recipes
   });
@@ -136,10 +138,7 @@ export async function getPopularRecipes(sortBy: "views" | "likes" = "views") {
       images: true,
     },
     orderBy: {
-      ...(sortBy === "views" 
-        ? { viewCount: "desc" }
-        : { likeCount: "desc" }
-      ),
+      ...(sortBy === "views" ? { viewCount: "desc" } : { likeCount: "desc" }),
     },
     take: 12,
   });

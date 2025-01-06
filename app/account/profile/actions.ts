@@ -25,9 +25,19 @@ export async function updateProfile(formData: FormData) {
     // Get form data
     const name = formData.get('name') as string
     const imageFile = formData.get('image') as File
+    const instagramHandle = formData.get('instagramHandle') as string
+    const facebookHandle = formData.get('facebookHandle') as string
+    const tiktokHandle = formData.get('tiktokHandle') as string
+    const youtubeHandle = formData.get('youtubeHandle') as string
+    const blogUrl = formData.get('blogUrl') as string
 
     const updateData: any = {
       name: name || null,
+      instagramHandle: instagramHandle || null,
+      facebookHandle: facebookHandle || null,
+      tiktokHandle: tiktokHandle || null,
+      youtubeHandle: youtubeHandle || null,
+      blogUrl: blogUrl || null,
     }
 
     if (imageFile && imageFile.size > 0) {
