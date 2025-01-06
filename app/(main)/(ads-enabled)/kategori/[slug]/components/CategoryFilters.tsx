@@ -17,19 +17,21 @@ export default function CategoryFilters({
 
   return (
     <section className="mb-8 flex items-center gap-4 flex-wrap">
+      {/* Difficulty Filter */}
       <div className="flex items-center gap-2">
         <span>Kesukaran:</span>
         <select
           value={difficulty || ""}
           onChange={(e) => {
-            const difficulty = e.target.value;
+            const diffValue = e.target.value;
             const url = new URL(window.location.href);
-            if (difficulty) {
-              url.searchParams.set("difficulty", difficulty);
+            if (diffValue) {
+              url.searchParams.set("difficulty", diffValue);
             } else {
               url.searchParams.delete("difficulty");
             }
-            url.searchParams.delete("page"); // reset to first page
+            // reset to first page
+            url.searchParams.delete("page");
             router.push(url.toString());
           }}
           className="border px-2 py-1 text-sm rounded"
@@ -41,19 +43,22 @@ export default function CategoryFilters({
           <option value="EXPERT">Pakar</option>
         </select>
       </div>
+
+      {/* Sort Filter */}
       <div className="flex items-center gap-2">
         <span>Susun:</span>
         <select
           value={sort || ""}
           onChange={(e) => {
-            const sort = e.target.value;
+            const sortValue = e.target.value;
             const url = new URL(window.location.href);
-            if (sort) {
-              url.searchParams.set("sort", sort);
+            if (sortValue) {
+              url.searchParams.set("sort", sortValue);
             } else {
               url.searchParams.delete("sort");
             }
-            url.searchParams.delete("page"); // reset to first page
+            // reset to first page
+            url.searchParams.delete("page");
             router.push(url.toString());
           }}
           className="border px-2 py-1 text-sm rounded"
@@ -63,6 +68,8 @@ export default function CategoryFilters({
           <option value="prepTime">Masa Penyediaan</option>
         </select>
       </div>
+
+      {/* A 'share category' button */}
       <button
         onClick={() => {
           navigator.clipboard.writeText(window.location.href);

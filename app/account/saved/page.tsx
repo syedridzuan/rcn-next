@@ -1,23 +1,29 @@
-import { auth } from "@/auth"
-import { redirect } from "next/navigation"
-import { prisma } from "@/lib/prisma"
-import Image from "next/image"
-import Link from "next/link"
-import { Shell } from "@/components/shell"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { UnsaveRecipeButton } from "./UnsaveRecipeButton"
-import { Clock, ChefHat, StickyNote, BookmarkIcon } from 'lucide-react'
-import type { SavedRecipe } from "@/types"
-import { EditNoteButton } from "./EditNoteButton"
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import Image from "next/image";
+import Link from "next/link";
+import { Shell } from "@/components/shell";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { UnsaveRecipeButton } from "./UnsaveRecipeButton";
+import { Clock, ChefHat, StickyNote, BookmarkIcon } from "lucide-react";
+import type { SavedRecipe } from "@/types";
+import { EditNoteButton } from "./EditNoteButton";
 
 export default async function SavedRecipesPage() {
   // Get current user session
-  const session = await auth()
-  
+  const session = await auth();
+
   // Redirect if not authenticated
   if (!session?.user?.email) {
-    redirect('/auth/signin')
+    redirect("/auth/signin");
   }
 
   // Fetch saved recipes with related data
@@ -44,16 +50,18 @@ export default async function SavedRecipesPage() {
       },
     },
     orderBy: {
-      createdAt: 'desc',
+      createdAt: "desc",
     },
-  })
+  });
 
   return (
     <Shell>
       <div className="space-y-8 max-w-7xl mx-auto">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-primary">Saved Recipes</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-primary">
+              Saved Recipes
+            </h1>
             <p className="mt-2 text-muted-foreground">
               View and manage your curated collection of favorite recipes.
             </p>
@@ -65,9 +73,12 @@ export default async function SavedRecipesPage() {
           <Card className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center animate-in fade-in-50">
             <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
               <ChefHat className="h-12 w-12 text-muted-foreground/60" />
-              <h2 className="mt-4 text-xl font-semibold">Your recipe collection is empty</h2>
+              <h2 className="mt-4 text-xl font-semibold">
+                Your recipe collection is empty
+              </h2>
               <p className="mb-6 mt-2 text-muted-foreground">
-                Start building your culinary journey by saving recipes you love or want to try.
+                Start building your culinary journey by saving recipes you love
+                or want to try.
               </p>
               <Button asChild size="lg">
                 <Link href="/recipes">Explore Recipes</Link>
@@ -77,7 +88,10 @@ export default async function SavedRecipesPage() {
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {savedRecipes.map(({ recipe, id, notes }) => (
-              <Card key={id} className="overflow-hidden transition-shadow hover:shadow-md">
+              <Card
+                key={id}
+                className="overflow-hidden transition-shadow hover:shadow-md"
+              >
                 <CardHeader className="border-b p-0">
                   {recipe.images[0] ? (
                     <div className="aspect-[4/3] relative">
@@ -96,11 +110,18 @@ export default async function SavedRecipesPage() {
                   )}
                 </CardHeader>
                 <CardContent className="grid gap-2.5 p-4">
-                  <CardTitle className="line-clamp-1 text-lg">{recipe.title}</CardTitle>
+                  <CardTitle className="line-clamp-1 text-lg">
+                    {recipe.title}
+                  </CardTitle>
+                  {/* Snippet within your map({ recipe }) => ( ... ) */}
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
-                      {recipe.category.name}
-                    </span>
+                    {/* Only display category badge if category exists */}
+                    {recipe.category && (
+                      <span className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
+                        {recipe.category.name}
+                      </span>
+                    )}
+
                     <span className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
                       {recipe.cookTime + recipe.prepTime} mins
@@ -113,7 +134,7 @@ export default async function SavedRecipesPage() {
                           <StickyNote className="h-4 w-4" />
                           Your Notes
                         </div>
-                        <EditNoteButton 
+                        <EditNoteButton
                           savedRecipeId={id}
                           initialNote={notes}
                         />
@@ -126,11 +147,9 @@ export default async function SavedRecipesPage() {
                 </CardContent>
                 <CardFooter className="p-4 pt-0 flex justify-between gap-2">
                   <Button asChild variant="default" className="w-full">
-                    <Link href={`/recipes/${recipe.slug}`}>
-                      View Recipe
-                    </Link>
+                    <Link href={`/resepi/${recipe.slug}`}>View Recipe</Link>
                   </Button>
-                  <UnsaveRecipeButton 
+                  <UnsaveRecipeButton
                     savedRecipeId={id}
                     className="shrink-0"
                     recipeName={recipe.title}
@@ -142,6 +161,5 @@ export default async function SavedRecipesPage() {
         )}
       </div>
     </Shell>
-  )
+  );
 }
-

@@ -60,12 +60,6 @@ export async function updateDraftRecipeAction(
   }
 }
 
-/**
- * A server action that:
- * 1) Loads a DraftRecipe
- * 2) Creates a new Recipe record (preserving sections/items order)
- * 3) Deletes the DraftRecipe
- */
 export async function publishDraftRecipeAction(
   draftId: string,
   userSlug?: string
@@ -86,7 +80,7 @@ export async function publishDraftRecipeAction(
       return { error: "Draft not found." };
     }
 
-    // 3) Generate or use provided slug
+    // 3) Generate or use provided slug for the final recipe
     const fallbackTitle = draft.title || "Untitled";
     let finalSlug = (userSlug ?? "").trim();
     if (!finalSlug) {
@@ -103,27 +97,45 @@ export async function publishDraftRecipeAction(
       };
     }
 
-    // 4) Create a new main Recipe record
+    // 4) Prepare a recipeData object
+    const recipeData: any = {
+      slug: finalSlug,
+      title: draft.title ?? "Untitled",
+      description: draft.description ?? "",
+      shortDescription: draft.shortDescription ?? "",
+      prepTime: draft.prepTime ?? 0,
+      cookTime: draft.cookTime ?? 0,
+      totalTime: draft.totalTime ?? 0,
+      difficulty: draft.difficulty ?? "MEDIUM",
+      servings: draft.servings ?? 0,
+      servingType: draft.servingType ?? null,
+      user: { connect: { id: userId } },
+    };
+
+    // 5) If the draft has tags, use connectOrCreate
+    if (draft.tags?.length) {
+      recipeData.tags = {
+        connectOrCreate: draft.tags.map((tagName: string) => {
+          const tagSlug = generateSlug(tagName);
+          return {
+            where: { slug: tagSlug },
+            create: {
+              name: tagName,
+              slug: tagSlug,
+            },
+          };
+        }),
+      };
+    }
+
+    // 6) Create the new Recipe
     const newRecipe = await prisma.recipe.create({
-      data: {
-        slug: finalSlug,
-        title: draft.title ?? "Untitled",
-        description: draft.description ?? "",
-        shortDescription: draft.shortDescription ?? "",
-        prepTime: draft.prepTime ?? 0,
-        cookTime: draft.cookTime ?? 0,
-        totalTime: draft.totalTime ?? 0,
-        difficulty: draft.difficulty ?? "MEDIUM",
-        servings: draft.servings ?? 0,
-        servingType: draft.servingType ?? null,
-        user: { connect: { id: userId } },
-      },
+      data: recipeData,
     });
 
-    // 5) Insert sections & items in the **same order** GPT gave us
+    // 7) Insert sections & items in the same order
     if (draft.sections && Array.isArray(draft.sections)) {
       for (const section of draft.sections) {
-        // Create each section in order
         const newSection = await prisma.recipeSection.create({
           data: {
             title: section.title || "Untitled Section",
@@ -131,7 +143,7 @@ export async function publishDraftRecipeAction(
             recipeId: newRecipe.id,
           },
         });
-        // Create items in the exact order they appear
+
         if (Array.isArray(section.items)) {
           for (const item of section.items) {
             if (item?.content) {
@@ -147,7 +159,7 @@ export async function publishDraftRecipeAction(
       }
     }
 
-    // 6) If draft.tips is an array, convert to RecipeTip
+    // 8) If draft.tips is an array, convert them to RecipeTip
     if (draft.tips && Array.isArray(draft.tips)) {
       for (const tipObj of draft.tips) {
         if (tipObj?.content) {
@@ -161,7 +173,7 @@ export async function publishDraftRecipeAction(
       }
     }
 
-    // 7) Delete the DraftRecipe if desired
+    // 9) Optionally delete the DraftRecipe or keep it
     // await prisma.draftRecipe.delete({ where: { id: draftId } });
 
     // Revalidate if needed

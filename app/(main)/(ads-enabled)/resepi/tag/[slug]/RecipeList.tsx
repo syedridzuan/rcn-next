@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 interface RecipeImageLite {
   id: string;
   url: string;
+  alt?: string | null;
   isPrimary: boolean;
 }
 
@@ -15,9 +16,13 @@ interface RecipeLite {
   title: string;
   slug: string;
   shortDescription?: string | null;
-  images?: RecipeImageLite[]; // <-- minimal fields for images
+  images?: RecipeImageLite[];
 }
 
+/**
+ * A simple listing for recipes by tag,
+ * with pagination controls to next/prev pages.
+ */
 interface RecipeListProps {
   recipes: RecipeLite[];
   tagSlug: string;
@@ -31,8 +36,6 @@ export function RecipeList({
   currentPage,
   totalPages,
 }: RecipeListProps) {
-  // If needed: page size, e.g. 10
-
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">
@@ -42,7 +45,8 @@ export function RecipeList({
       {/* Recipe Grid */}
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {recipes.map((recipe) => {
-          const imageUrl = recipe.images?.[0]?.url ?? ""; // fallback if no image
+          const primaryImage = recipe.images?.find((img) => img.isPrimary);
+          const imageUrl = primaryImage?.url ?? "";
 
           return (
             <div key={recipe.id} className="border rounded p-2">
@@ -50,7 +54,7 @@ export function RecipeList({
               {imageUrl ? (
                 <img
                   src={imageUrl}
-                  alt={`Thumbnail for ${recipe.title}`}
+                  alt={primaryImage?.alt || `Thumbnail for ${recipe.title}`}
                   className="w-full h-40 object-cover mb-2 rounded"
                 />
               ) : (

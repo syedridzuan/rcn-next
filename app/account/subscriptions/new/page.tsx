@@ -1,48 +1,76 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-// If you’re using a toast system (e.g., ShadCN UI):
-// import { useToast } from "@/components/ui/use-toast";
+import { useEffect, useState } from "react";
+
+// A client helper that calls an API endpoint to check if the user is subscribed
+import { hasActiveSubscriptionClient } from "@/lib/subscription-client";
 
 export default function NewSubscriptionPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  // const { toast } = useToast(); // if you want to show a toast
 
-  const [loading, setLoading] = useState(false);
+  // UI states
+  const [loading, setLoading] = useState(true);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [alreadySubscribed, setAlreadySubscribed] = useState(false);
 
-  // Safely extract user’s email from the session
+  // Extract user’s email from the session
   const userEmail = session?.user?.email ?? "";
 
-  // 1. If user is not logged in, you may optionally redirect them
+  // 1) If user is not logged in, optionally redirect them
   useEffect(() => {
     if (status === "unauthenticated") {
-      // e.g. redirect to sign in
       router.replace("/auth/signin");
+      return;
+    }
+
+    // 2) If user is logged in, check subscription
+    if (status === "authenticated") {
+      (async () => {
+        const isActive = await hasActiveSubscriptionClient();
+        setAlreadySubscribed(isActive);
+        setLoading(false);
+      })();
     }
   }, [status, router]);
 
-  // 2. Handle "Langgan Sekarang"
+  // 3) While checking subscription or session, show a placeholder
+  if (loading || status === "loading") {
+    return <p>Sedang memeriksa status langganan...</p>;
+  }
+
+  // 4) If user already has an active subscription, show message instead of new-sub flow
+  if (alreadySubscribed) {
+    return (
+      <main style={{ padding: "3rem", maxWidth: "700px", margin: "0 auto" }}>
+        <h1 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>
+          Anda sudah mempunyai langganan aktif
+        </h1>
+        <p>
+          Jika anda ingin menukar pelan, sila hubungi sokongan atau batalkan
+          langganan semasa terlebih dahulu.
+        </p>
+      </main>
+    );
+  }
+
+  // 5) The “Langgan Sekarang” handler
   const handleSubscribe = async () => {
-    // If for some reason we lack an email, show an error
     if (!userEmail) {
       setCheckoutError("Email anda tidak ditemui. Sila log masuk semula.");
       return;
     }
 
-    setLoading(true);
     setCheckoutError(null);
-
     try {
+      // Call your server route to create a subscription
       const response = await fetch("/api/subscribe-existing-user", {
         method: "POST",
       });
 
       if (!response.ok) {
-        // e.g. 401 if not logged in, 500 on server error, etc.
         const { error } = await response.json();
         throw new Error(error || "Ralat semasa memproses langganan.");
       }
@@ -56,15 +84,10 @@ export default function NewSubscriptionPage() {
       window.location.href = url;
     } catch (err: any) {
       setCheckoutError(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
-  if (status === "loading") {
-    return <p>Sedang memeriksa status log masuk...</p>;
-  }
-
+  // 6) Render the subscription form UI if not subscribed
   return (
     <main style={{ padding: "3rem", maxWidth: "900px", margin: "0 auto" }}>
       <h1
@@ -80,7 +103,7 @@ export default function NewSubscriptionPage() {
           gap: "2rem",
         }}
       >
-        {/* Kiri: Maklumat Pelan */}
+        {/* Left: Pelan Info */}
         <div
           style={{
             backgroundColor: "#fff",
@@ -111,7 +134,7 @@ export default function NewSubscriptionPage() {
           </ul>
         </div>
 
-        {/* Kanan: Butang Langganan */}
+        {/* Right: Butang Langgan */}
         <div
           style={{
             backgroundColor: "#fff",
@@ -129,7 +152,6 @@ export default function NewSubscriptionPage() {
 
           <button
             onClick={handleSubscribe}
-            disabled={loading}
             style={{
               marginTop: "1rem",
               padding: "0.75rem 1.5rem",
@@ -141,7 +163,7 @@ export default function NewSubscriptionPage() {
               fontWeight: "600",
             }}
           >
-            {loading ? "Memproses..." : "Langgan Sekarang"}
+            Langgan Sekarang
           </button>
 
           {checkoutError && (

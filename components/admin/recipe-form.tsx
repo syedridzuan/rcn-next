@@ -27,9 +27,7 @@ import { PlusCircle, Trash2 } from "lucide-react";
 import { createRecipe, updateRecipe } from "@/app/admin/recipes/actions";
 import { toast } from "sonner";
 
-//
-// Zod schema
-//
+// 1) Add `status` to the schema
 const recipeSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
@@ -54,24 +52,23 @@ const recipeSchema = z.object({
   tips: z.array(z.string().min(1, "Tip cannot be empty")).optional(),
   tags: z.array(z.string()).optional(),
   isEditorsPick: z.boolean().optional(),
+
+  // 2) The new field for "status"
+  status: z.enum(["DRAFT", "PUBLISHED", "HIDDEN"]).optional(),
 });
 
 type RecipeFormData = z.infer<typeof recipeSchema>;
 
 interface RecipeFormProps {
   categories: { id: string; name: string }[];
-  /**
-   * A list of all available tag names from DB (if you want to show them).
-   * But with the new single text field approach, you can omit it or keep for reference.
-   */
-  tags: string[];
+  allTagSuggestions?: string[];
   initialData?: RecipeFormData;
   recipeId?: string;
 }
 
 export function RecipeForm({
   categories,
-  tags,
+  allTagSuggestions,
   initialData,
   recipeId,
 }: RecipeFormProps) {
@@ -95,18 +92,11 @@ export function RecipeForm({
       tips: [],
       tags: [],
       isEditorsPick: false,
+      status: "DRAFT", // default if you want
     },
   });
 
-  //
-  // (1) Use a single text box to handle comma-separated tags
-  // Initialize from `initialData?.tags` if editing
-  //
-  const [tagString, setTagString] = useState(
-    initialData?.tags?.join(", ") || ""
-  );
-
-  // Field arrays for sections and tips
+  // Field arrays for "sections" and "tips"
   const {
     fields: sections,
     append: appendSection,
@@ -125,38 +115,43 @@ export function RecipeForm({
     control: form.control,
   });
 
-  // We don't need a field array for tags anymore,
-  // since we're capturing them in tagString.
+  // Single text box for comma-separated tags
+  const [tagString, setTagString] = useState(
+    initialData?.tags?.join(", ") || ""
+  );
 
-  //
-  // When user submits the form
-  //
+  // Watch cookTime, prepTime to show totalTime
+  const prepVal = form.watch("prepTime");
+  const cookVal = form.watch("cookTime");
+  const totalTime = (Number(prepVal) || 0) + (Number(cookVal) || 0);
+
   async function onSubmit(data: RecipeFormData) {
     try {
       setIsPending(true);
 
-      // Parse the comma-separated tags from tagString
+      // parse comma-separated tags
       const parsedTags = tagString
         .split(",")
-        .map((tag) => tag.trim())
+        .map((t) => t.trim())
         .filter(Boolean);
 
-      // Overwrite the `tags` array with the parsed results
       data.tags = parsedTags;
 
       if (recipeId) {
+        // updating
         const result = await updateRecipe(recipeId, data);
         if (result?.success) {
           toast.success("Recipe updated successfully");
         }
       } else {
+        // creating new
         const result = await createRecipe(data);
         if (result?.success) {
           toast.success("Recipe created successfully");
         }
       }
 
-      router.push("/dashboard/recipes");
+      router.push("/admin/recipes");
     } catch (error) {
       toast.error(
         recipeId ? "Failed to update recipe" : "Failed to create recipe"
@@ -165,19 +160,12 @@ export function RecipeForm({
     }
   }
 
-  //
-  // Calculate totalTime on-the-fly (prepTime + cookTime)
-  // We'll show it read-only in the form
-  //
-  const prepVal = form.watch("prepTime");
-  const cookVal = form.watch("cookTime");
-  const totalTime = (Number(prepVal) || 0) + (Number(cookVal) || 0);
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {/* Title & Category */}
+        {/* Title, Category, etc. */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Title */}
           <FormField
             control={form.control}
             name="title"
@@ -192,6 +180,7 @@ export function RecipeForm({
             )}
           />
 
+          {/* Category */}
           <FormField
             control={form.control}
             name="categoryId"
@@ -220,7 +209,7 @@ export function RecipeForm({
             )}
           />
 
-          {/* Description & Short Description */}
+          {/* Description */}
           <FormField
             control={form.control}
             name="description"
@@ -239,6 +228,7 @@ export function RecipeForm({
             )}
           />
 
+          {/* Short Description */}
           <FormField
             control={form.control}
             name="shortDescription"
@@ -247,9 +237,9 @@ export function RecipeForm({
                 <FormLabel>Short Description</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="One-liner or short excerpt about this recipe"
+                    placeholder="One-liner or short excerpt"
                     {...field}
-                    className="h-32"
+                    className="h-24"
                   />
                 </FormControl>
                 <FormMessage />
@@ -257,7 +247,7 @@ export function RecipeForm({
             )}
           />
 
-          {/* Language & Difficulty */}
+          {/* Language */}
           <FormField
             control={form.control}
             name="language"
@@ -283,6 +273,7 @@ export function RecipeForm({
             )}
           />
 
+          {/* Difficulty */}
           <FormField
             control={form.control}
             name="difficulty"
@@ -310,7 +301,34 @@ export function RecipeForm({
             )}
           />
 
-          {/* PrepTime, CookTime, Servings */}
+          {/* Status (New Field) */}
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value || "DRAFT"}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="DRAFT">Draft</SelectItem>
+                    <SelectItem value="PUBLISHED">Published</SelectItem>
+                    <SelectItem value="HIDDEN">Hidden</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* PrepTime */}
           <FormField
             control={form.control}
             name="prepTime"
@@ -325,6 +343,7 @@ export function RecipeForm({
             )}
           />
 
+          {/* CookTime */}
           <FormField
             control={form.control}
             name="cookTime"
@@ -339,6 +358,7 @@ export function RecipeForm({
             )}
           />
 
+          {/* Servings */}
           <FormField
             control={form.control}
             name="servings"
@@ -353,7 +373,7 @@ export function RecipeForm({
             )}
           />
 
-          {/* Display totalTime read-only */}
+          {/* totalTime read-only */}
           <div className="space-y-1">
             <FormLabel>Total Time (minutes)</FormLabel>
             <Input
@@ -364,7 +384,7 @@ export function RecipeForm({
             />
           </div>
 
-          {/* Editor's pick */}
+          {/* isEditorsPick */}
           <FormField
             control={form.control}
             name="isEditorsPick"
@@ -389,95 +409,40 @@ export function RecipeForm({
           />
         </div>
 
-        {/* Single text box for comma-separated tags */}
+        {/* Tag input (comma separated) */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Tags</h3>
           <FormLabel>Enter tags, separated by commas</FormLabel>
           <Input
-            placeholder="e.g. nasi lemak, spicy, coconut"
+            placeholder="e.g. malay, spicy, coconut"
             value={tagString}
             onChange={(e) => setTagString(e.target.value)}
           />
         </div>
 
-        {/* Recipe Sections */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Recipe Sections</h3>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                appendSection({
-                  title: "",
-                  type: "INGREDIENTS",
-                  items: [{ content: "" }],
-                })
-              }
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Add Section
-            </Button>
-          </div>
+        {/* Sections array */}
+        <SectionsFieldArray
+          form={form}
+          sections={sections}
+          append={appendSection}
+          remove={removeSection}
+        />
 
-          {sections.map((section, sectionIndex) => (
-            <RecipeSection
-              key={section.id}
-              form={form}
-              index={sectionIndex}
-              onRemove={() => removeSection(sectionIndex)}
-            />
-          ))}
-        </div>
+        {/* Tips array */}
+        <TipsFieldArray
+          form={form}
+          tips={tips}
+          append={appendTip}
+          remove={removeTip}
+        />
 
-        {/* Tips Section */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Tips</h3>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => appendTip("")}
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Add Tip
-            </Button>
-          </div>
-
-          {tips.map((tip, index) => (
-            <div key={tip.id} className="flex gap-2 items-center">
-              <FormField
-                control={form.control}
-                name={`tips.${index}`}
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormControl>
-                      <Input
-                        placeholder="e.g., Let dough rest for 10 mins"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => removeTip(index)}
-              >
-                <Trash2 className="w-4 h-4 text-red-500" />
-              </Button>
-            </div>
-          ))}
-        </div>
-
-        {/* Submit & Cancel */}
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={() => router.back()}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+            disabled={isPending}
+          >
             Cancel
           </Button>
           <Button type="submit" disabled={isPending}>
@@ -495,22 +460,46 @@ export function RecipeForm({
   );
 }
 
-//
-// A helper subcomponent for the “sections” array.
-//
-function RecipeSection({
-  form,
-  index,
-  onRemove,
-}: {
-  form: any;
-  index: number;
-  onRemove: () => void;
-}) {
+// Example subcomponents for sections/tips:
+function SectionsFieldArray({ form, sections, append, remove }: any) {
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Recipe Sections</h3>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            append({
+              title: "",
+              type: "INGREDIENTS",
+              items: [{ content: "" }],
+            })
+          }
+        >
+          <PlusCircle className="w-4 h-4 mr-2" />
+          Add Section
+        </Button>
+      </div>
+
+      {sections.map((section: any, sectionIndex: number) => (
+        <OneSection
+          key={section.id}
+          form={form}
+          index={sectionIndex}
+          remove={remove}
+        />
+      ))}
+    </div>
+  );
+}
+
+function OneSection({ form, index, remove }: any) {
   const {
     fields: items,
     append,
-    remove,
+    remove: removeItem,
   } = useFieldArray({
     name: `sections.${index}.items`,
     control: form.control,
@@ -527,7 +516,7 @@ function RecipeSection({
               <FormItem>
                 <FormLabel>Section Title</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., For the sauce" {...field} />
+                  <Input {...field} placeholder="e.g. Bahan Kuah" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -559,13 +548,18 @@ function RecipeSection({
             )}
           />
         </div>
-        <Button type="button" variant="ghost" size="sm" onClick={onRemove}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => remove(index)}
+        >
           <Trash2 className="w-4 h-4 text-red-500" />
         </Button>
       </div>
 
       <div className="space-y-4">
-        {items.map((item, itemIndex) => (
+        {items.map((item: any, itemIndex: number) => (
           <div key={item.id} className="flex gap-2">
             <FormField
               control={form.control}
@@ -573,14 +567,7 @@ function RecipeSection({
               render={({ field }) => (
                 <FormItem className="flex-1">
                   <FormControl>
-                    <Input
-                      placeholder={
-                        form.watch(`sections.${index}.type`) === "INGREDIENTS"
-                          ? "e.g., 2 cups flour"
-                          : "e.g., Mix all ingredients"
-                      }
-                      {...field}
-                    />
+                    <Input {...field} placeholder="e.g. 2 cups flour" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -590,7 +577,7 @@ function RecipeSection({
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => remove(itemIndex)}
+              onClick={() => removeItem(itemIndex)}
             >
               <Trash2 className="w-4 h-4 text-red-500" />
             </Button>
@@ -607,6 +594,53 @@ function RecipeSection({
           Add Item
         </Button>
       </div>
+    </div>
+  );
+}
+
+function TipsFieldArray({ form, tips, append, remove }: any) {
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Tips</h3>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => append("")}
+        >
+          <PlusCircle className="w-4 h-4 mr-2" />
+          Add Tip
+        </Button>
+      </div>
+
+      {tips.map((tip: any, index: number) => (
+        <div key={tip.id} className="flex gap-2 items-center">
+          <FormField
+            control={form.control}
+            name={`tips.${index}`}
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormControl>
+                  <Input
+                    placeholder="e.g., Let the dough rest for 10 minutes"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => remove(index)}
+          >
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </Button>
+        </div>
+      ))}
     </div>
   );
 }

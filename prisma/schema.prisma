@@ -167,7 +167,8 @@ model Recipe {
   tags                Tag[]             @relation("RecipesOnTags")
   isEditorsPick       Boolean           @default(false)
   createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  updatedAt           DateTime
+  publishedAt         DateTime?
   reviews             Review[]
   avgRating           Float?
   numReviews          Int               @default(0)

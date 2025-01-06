@@ -1,8 +1,5 @@
-/* --------------------------------------------
-   app/(main)/(ads-enabled)/resepi/cari/page.tsx
---------------------------------------------- */
 import type { RecipeDifficulty } from "@prisma/client";
-import { auth } from "@/auth"; // e.g., your NextAuth server function or custom auth
+import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,17 +11,12 @@ import LiveSearch from "./components/LiveSearch";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Bentuk querystring. Next.js 15 menjadikan `searchParams` sebagai 'promise'
- * di dalam server components.
- */
 interface SearchParams {
   keyword?: string;
   page?: string;
   difficulty?: string;
   categoryId?: string;
 }
-
 interface SearchRecipesPageProps {
   searchParams: Promise<SearchParams>;
 }
@@ -41,9 +33,8 @@ export async function generateMetadata({
 export default async function SearchRecipesPage({
   searchParams: promised,
 }: SearchRecipesPageProps) {
-  // 1. Dapatkan query param secara async
+  // 1) read searchParams (Next.js 15 quirk)
   const searchParams = await promised;
-
   const keyword = (searchParams.keyword ?? "").trim();
   let pageNum = parseInt(searchParams.page ?? "1", 10);
   if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
@@ -51,15 +42,15 @@ export default async function SearchRecipesPage({
   const difficultyFilter = (searchParams.difficulty ?? "").trim().toUpperCase();
   const categoryIdFilter = (searchParams.categoryId ?? "").trim();
 
-  // 2. Buat pagination asas
+  // 2) Basic pagination
   const PAGE_SIZE = 10;
   const skip = (pageNum - 1) * PAGE_SIZE;
   const take = PAGE_SIZE;
 
-  // 3. Buat syarat 'where' untuk Prisma
+  // 3) Build `where` for Prisma: **only published** recipes
   const whereCondition: any = { status: "PUBLISHED" };
 
-  // Jika ada keyword => cari di title / shortDescription
+  // If user typed a keyword
   if (keyword) {
     whereCondition.OR = [
       { title: { contains: keyword, mode: "insensitive" } },
@@ -67,7 +58,7 @@ export default async function SearchRecipesPage({
     ];
   }
 
-  // Jika difficulty valid
+  // Check if difficulty is valid
   const validDifficulties: RecipeDifficulty[] = [
     "EASY",
     "MEDIUM",
@@ -78,17 +69,15 @@ export default async function SearchRecipesPage({
     whereCondition.difficulty = difficultyFilter;
   }
 
-  // Jika ada categoryId
+  // If user selected a category
   if (categoryIdFilter) {
     whereCondition.categoryId = categoryIdFilter;
   }
 
-  // 4. Semak langganan user (untuk lihat resepi baru)
-  //    - Contoh: check NextAuth session + db subscription
+  // 4) Check subscription
   const session = await auth();
   let userHasActiveSub = false;
   if (session?.user?.id) {
-    // Contoh: semak subscription
     const activeSub = await prisma.subscription.findFirst({
       where: {
         userId: session.user.id,
@@ -98,7 +87,7 @@ export default async function SearchRecipesPage({
     userHasActiveSub = !!activeSub;
   }
 
-  // 5. Dapatkan senarai categories, recipes, totalCount
+  // 5) Load categories, recipes, totalCount
   const [categories, recipes, totalCount] = await Promise.all([
     prisma.category.findMany({
       select: { id: true, name: true },
@@ -108,7 +97,7 @@ export default async function SearchRecipesPage({
       where: whereCondition,
       skip,
       take,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "desc" }, // or publishedAt if you prefer
       select: {
         id: true,
         title: true,
@@ -130,23 +119,17 @@ export default async function SearchRecipesPage({
     prisma.recipe.count({ where: whereCondition }),
   ]);
 
-  // 6. Filter recipes based on subscription status
+  // 6) Filter out membersOnly if user not subscribed
   const filteredRecipes = recipes.filter((r) => {
     if (r.membersOnly && !userHasActiveSub) {
-      // Hide members-only recipes from non-subscribers
       return false;
     }
     return true;
   });
 
-  // 7. Kira total pages, tapi kita mungkin buat sekadar paparan semasa
-  //    (Jika nak pagination betul-betul, kena kira semula)
-  const visibleCount = filteredRecipes.length;
-  // totalPages = (in-memory) => Math.ceil(visibleCount / PAGE_SIZE)
-  // Dalam snippet ini, kita kekal totalPages dari DB untuk ringkas
+  // 7) totalPages
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  // 8. Bina fungsi pagination link
   function buildPageUrl(target: number) {
     const params = new URLSearchParams();
     if (keyword) params.set("keyword", keyword);
@@ -160,7 +143,7 @@ export default async function SearchRecipesPage({
     <main className="container mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">Carian Resepi</h1>
 
-      {/* Borang carian (server side) */}
+      {/* Basic search form */}
       <form method="GET" className="flex flex-wrap items-center gap-2 mb-6">
         <Input
           type="text"
@@ -200,7 +183,7 @@ export default async function SearchRecipesPage({
         </Button>
       </form>
 
-      {/* Komponen carian langsung (debounced) */}
+      {/* Debounced Live Search */}
       <div className="mb-6">
         <LiveSearch />
       </div>
@@ -212,7 +195,6 @@ export default async function SearchRecipesPage({
         {userHasActiveSub ? " (Langganan aktif)" : ""}
       </p>
 
-      {/* Senarai resepi */}
       {filteredRecipes.length < 1 ? (
         <p className="text-red-600 font-medium">
           Tiada resepi ditemui atau resepi baru memerlukan langganan.
@@ -268,7 +250,7 @@ export default async function SearchRecipesPage({
         </div>
       )}
 
-      {/* Pagination Controls */}
+      {/* Pagination */}
       <div className="flex items-center justify-center gap-4 mt-6">
         <Button variant="outline" disabled={pageNum <= 1} asChild>
           <a href={buildPageUrl(pageNum - 1)}>Sebelum</a>

@@ -28,6 +28,7 @@ interface RecipeItem {
   status: RecipeStatus;
   updatedAt?: string;
   categoryId?: string;
+  publishedAt?: string | null;
 }
 
 interface RecipeMetaAdminProps {

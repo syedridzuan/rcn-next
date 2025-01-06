@@ -3,13 +3,13 @@
 import { prisma } from "@/lib/db";
 
 /**
- * Retrieve paginated recipes that match a given tag slug.
+ * Retrieve paginated recipes that match a given tag slug,
+ * *only* published recipes, ordered by publishedAt desc.
  *
- * @param slug       - The slug of the tag (e.g., "kuih-muih", "pedas")
- * @param page       - The current page number (defaults to 1)
- * @param pageSize   - Number of recipes per page (defaults to 10)
- * @returns An object containing:
- *           { recipes: Recipe[], totalCount: number }
+ * @param slug     - The slug of the tag (e.g. "kuih-muih")
+ * @param page     - The current page number (defaults to 1)
+ * @param pageSize - Number of recipes per page (defaults to 10)
+ * @returns { recipes, totalCount }
  */
 export async function getRecipesByTag({
   slug,
@@ -35,18 +35,19 @@ export async function getRecipesByTag({
     return { recipes: [], totalCount: 0 };
   }
 
-  // 2. Now find recipes that have that tag
+  // 2. Now find recipes that have that tag *and* are published
   const [recipes, totalCount] = await Promise.all([
     prisma.recipe.findMany({
       where: {
+        status: "PUBLISHED",
         tags: {
           some: { id: tagRecord.id },
         },
-        // e.g. Only published recipes, if you use a status field:
-        // status: "PUBLISHED",
       },
-      // Include images so you can display a thumbnail
-      // Adjust fields as needed (url, alt, isPrimary, etc.)
+      // Only published => order by publishedAt desc
+      orderBy: { publishedAt: "desc" },
+      skip,
+      take,
       include: {
         images: {
           select: {
@@ -57,17 +58,14 @@ export async function getRecipesByTag({
           },
         },
       },
-      orderBy: { createdAt: "desc" },
-      skip,
-      take,
     }),
 
     prisma.recipe.count({
       where: {
+        status: "PUBLISHED",
         tags: {
           some: { id: tagRecord.id },
         },
-        // status: "PUBLISHED",
       },
     }),
   ]);

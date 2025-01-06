@@ -5,19 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { slugify } from "@/lib/utils";
 
-interface RecipeItemData {
-  content: string;
-}
-
-interface RecipeSectionData {
-  title: string;
-  type: string;
-  items: RecipeItemData[];
-}
-
-interface RecipeTipData {
-  content: string;
-}
+// ... other imports
 
 interface RecipeFormData {
   title: string;
@@ -29,105 +17,26 @@ interface RecipeFormData {
   servings: number;
   difficulty: string;
   categoryId: string;
-  sections: RecipeSectionData[];
-  /**
-   * Each tip is { content: string }
-   * Make sure to pass an array of objects from the client or JSON parse
-   */
-  tips: RecipeTipData[];
+  sections: Array<{
+    title: string;
+    type: string;
+    items: Array<{ content: string }>;
+  }>;
+  tips?: string[]; // or objects if you store { content }
   tags?: string[];
   isEditorsPick: boolean;
-}
-
-// CREATE a new recipe
-export async function createRecipe(data: RecipeFormData) {
-  // 1. Ensure the user is logged in
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error("You must be logged in to create a recipe.");
-  }
-
-  // 2. Generate a unique slug for the recipe
-  const slug = slugify(data.title);
-
-  // 3. Ensure no existing recipe with this slug
-  const existingRecipe = await prisma.recipe.findUnique({
-    where: { slug },
-  });
-  if (existingRecipe) {
-    throw new Error("A recipe with this title (slug) already exists.");
-  }
-
-  // 4. Prepare auto-slugified tags
-  const tagsData = data.tags?.map((tagName) => {
-    const tagSlug = slugify(tagName);
-    return {
-      where: { slug: tagSlug },
-      create: { name: tagName, slug: tagSlug },
-    };
-  });
-
-  // 5. Create the recipe in Prisma
-  await prisma.recipe.create({
-    data: {
-      title: data.title,
-      description: data.description,
-      shortDescription: data.shortDescription,
-      language: data.language,
-      cookTime: data.cookTime,
-      prepTime: data.prepTime,
-      servings: data.servings,
-      difficulty: data.difficulty,
-      slug,
-      categoryId: data.categoryId,
-      userId: session.user.id,
-
-      // Sections with items
-      sections: {
-        create: data.sections.map((section) => ({
-          title: section.title,
-          type: section.type,
-          items: {
-            // items is array of { content: string }
-            create: section.items.map((item) => ({ content: item.content })),
-          },
-        })),
-      },
-
-      // Tips: array of objects, each with "content"
-      tips: data.tips?.length
-        ? {
-            create: data.tips.map((tip) => ({
-              content: tip.content,
-            })),
-          }
-        : undefined,
-
-      // Tags
-      tags: tagsData?.length
-        ? {
-            connectOrCreate: tagsData,
-          }
-        : undefined,
-
-      isEditorsPick: data.isEditorsPick,
-    },
-  });
-
-  // 6. Revalidate your recipes admin path (or wherever needed)
-  revalidatePath("/admin/recipes");
-  return { success: true };
+  status?: string; // <--- must be added if you want to set recipe status
 }
 
 // UPDATE an existing recipe
 export async function updateRecipe(id: string, data: RecipeFormData) {
-  // 1. Ensure the user is logged in
+  // 1) Ensure the user is logged in
   const session = await auth();
   if (!session?.user?.id) {
     throw new Error("You must be logged in to update a recipe.");
   }
 
-  // 2. Check if the recipe exists
+  // 2) Check if the recipe exists
   const existingRecipe = await prisma.recipe.findUnique({
     where: { id },
   });
@@ -135,12 +44,12 @@ export async function updateRecipe(id: string, data: RecipeFormData) {
     throw new Error(`Recipe with id ${id} not found.`);
   }
 
-  // 3. Verify ownership
+  // 3) Verify ownership (if you need to ensure only the creator can edit)
   if (existingRecipe.userId !== session.user.id) {
     throw new Error("Unauthorized: You do not own this recipe.");
   }
 
-  // 4. Remove old sections, items, tips (to fully replace them)
+  // 4) Remove old sections, items, tips (fully replace them)
   await prisma.recipeItem.deleteMany({
     where: { section: { recipeId: id } },
   });
@@ -151,13 +60,13 @@ export async function updateRecipe(id: string, data: RecipeFormData) {
     where: { recipeId: id },
   });
 
-  // 5. Disconnect all tags so we can replace with new data
+  // 5) Disconnect all tags so we can replace with new data
   await prisma.recipe.update({
     where: { id },
     data: { tags: { set: [] } },
   });
 
-  // 6. Prepare auto-slugified tags
+  // 6) Prepare connectOrCreate data for tags
   const tagsData = data.tags?.map((tagName) => {
     const tagSlug = slugify(tagName);
     return {
@@ -166,7 +75,9 @@ export async function updateRecipe(id: string, data: RecipeFormData) {
     };
   });
 
-  // 7. Update the recipe
+  // 7) Update the recipe
+  //    If user updates title/description but remains in DRAFT, publishedAt remains null.
+  //    If user sets status to PUBLISHED, then publishedAt = now.
   await prisma.recipe.update({
     where: {
       id,
@@ -182,6 +93,9 @@ export async function updateRecipe(id: string, data: RecipeFormData) {
       servings: data.servings,
       difficulty: data.difficulty,
       categoryId: data.categoryId,
+      status: data.status, // if you're storing the new status
+
+      publishedAt: data.status === "PUBLISHED" ? new Date() : undefined,
 
       // Re-create sections + items
       sections: {
@@ -197,14 +111,9 @@ export async function updateRecipe(id: string, data: RecipeFormData) {
       // Re-create tips
       tips: data.tips?.length
         ? {
-            create: data.tips.map((tip) => {
-              // If tip is a string, convert to { content: tip }
-              // If tip is already an object, pass it through
-              if (typeof tip === "string") {
-                return { content: tip };
-              }
-              return tip; // or { content: 'Invalid tip' } fallback
-            }),
+            create: data.tips.map((tip) =>
+              typeof tip === "string" ? { content: tip } : tip
+            ),
           }
         : undefined,
 
@@ -219,26 +128,7 @@ export async function updateRecipe(id: string, data: RecipeFormData) {
     },
   });
 
-  // 8. Revalidate the admin/recipes page
-  revalidatePath("/admin/recipes");
-  return { success: true };
-}
-
-// DELETE a recipe
-export async function deleteRecipe(id: string) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error("You must be logged in to delete a recipe.");
-  }
-
-  // Check if user is owner
-  await prisma.recipe.delete({
-    where: {
-      id,
-      userId: session.user.id,
-    },
-  });
-
+  // 8) Revalidate
   revalidatePath("/admin/recipes");
   return { success: true };
 }

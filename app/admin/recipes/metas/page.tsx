@@ -29,6 +29,7 @@ export default async function AdminRecipeMetasPage() {
       status: true,
       categoryId: true,
       updatedAt: true,
+      publishedAt: true,
     },
     orderBy: { updatedAt: "desc" },
   });

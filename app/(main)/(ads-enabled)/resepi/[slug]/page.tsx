@@ -1,10 +1,11 @@
-// app/(main)/(ads-enabled)/resepi/[slug]/page.tsx
+// File: app/(main)/(ads-enabled)/resepi/[slug]/page.tsx
 
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+
 import { prisma } from "@/lib/db";
 import { auth } from "@/auth";
 import { absoluteUrl, formatDate } from "@/lib/utils";
@@ -21,20 +22,27 @@ import { RecipeMetaCards } from "./recipe-meta-cards";
 
 import { Eye as EyeIcon, Tag } from "lucide-react";
 import type { RecipeDifficulty, ServingType } from "@prisma/client";
-
-// 1) Import your helper
 import { hasActiveSubscription } from "@/lib/subscription";
 import { isOlderThanOneWeek } from "@/lib/helpers/isOlderThanOneWeek";
 
 /**
- * A helper to load the recipe from the DB
- * including all relations you need in the UI.
+ * A helper to load the recipe from DB and also determine user subscription.
+ * We'll return `recipe` plus a boolean `isUserSubscribed` so the page can
+ * pass it to the client component.
  */
 async function getRecipe(slug: string) {
-  // 1) We fetch the user session
   const session = await auth();
 
-  // 2) Query the recipe from DB
+  let userId: string | null = null;
+  let isUserSubscribed = false;
+
+  if (session?.user?.id) {
+    userId = session.user.id;
+    // Check subscription
+    isUserSubscribed = await hasActiveSubscription(userId);
+  }
+
+  // Query the recipe
   const recipe = await prisma.recipe.findUnique({
     where: { slug },
     include: {
@@ -69,9 +77,9 @@ async function getRecipe(slug: string) {
       _count: {
         select: { comments: true },
       },
-      savedBy: session?.user?.id
+      savedBy: userId
         ? {
-            where: { userId: session.user.id },
+            where: { userId },
             select: { id: true, notes: true },
             take: 1,
           }
@@ -79,52 +87,29 @@ async function getRecipe(slug: string) {
     },
   });
 
-  // 3) If no recipe found, return null → leads to notFound()
-  if (!recipe) {
+  if (!recipe) return null;
+
+  // If recipe is membersOnly, verify sub or redirect
+  if (recipe.membersOnly && !isUserSubscribed) {
+    // e.g. Option B: redirect to subscription page
+    redirect("/langganan?reason=members-only");
     return null;
   }
 
-  // 4) If the recipe is marked as membersOnly
-  if (recipe.membersOnly) {
-    console.log("Recipe is membersOnly, checking subscription...");
-    // Check if user is logged in and has active sub
-    let userHasActiveSub = false;
-    if (session?.user?.id) {
-      userHasActiveSub = await hasActiveSubscription(session.user.id);
-      console.log("User has active subscription:", userHasActiveSub);
-    }
-
-    // If userHasActiveSub is false, decide on your approach:
-    // Option A: return null so we do `notFound()`
-    // Option B: redirect to a subscription page
-    if (!userHasActiveSub) {
-      // e.g. Option A:
-      //return null;
-
-      // or Option B:
-      redirect("/langganan?reason=members-only");
-      return null;
-      // return null;
-    }
-  }
-
-  let showFullRecipe = false;
-  if (session?.user?.id) {
-    showFullRecipe = await hasActiveSubscription(session.user.id);
-  }
-  
-  // Allow full access if recipe is older than a week
-  if (!showFullRecipe && recipe.createdAt) {
-    showFullRecipe = isOlderThanOneWeek(recipe.createdAt);
+  // Decide if we show the full recipe sections
+  let showFullRecipe = isUserSubscribed; // if subscribed, show all
+  // Or if older than 1 week => also show
+  if (!showFullRecipe && recipe.publishedAt) {
+    showFullRecipe = isOlderThanOneWeek(recipe.publishedAt);
   }
 
   return {
-    ...recipe,
+    recipe,
+    isUserSubscribed,
     showFullRecipe,
   };
 }
 
-/** Difficulty translations for display */
 const difficultyTranslations: Record<RecipeDifficulty, string> = {
   EASY: "Mudah",
   MEDIUM: "Sederhana",
@@ -132,20 +117,18 @@ const difficultyTranslations: Record<RecipeDifficulty, string> = {
   EXPERT: "Pakar",
 };
 
-/**
- * Generate the SEO metadata
- */
 export async function generateMetadata({
   params: promisedParams,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await promisedParams;
-  const recipe = await getRecipe(slug);
-  if (!recipe) {
+  const result = await getRecipe(slug);
+  if (!result?.recipe) {
     return { title: "Resepi Tidak Dijumpai" };
   }
 
+  const recipe = result.recipe;
   const url = absoluteUrl(`/resepi/${recipe.slug}`);
 
   return {
@@ -175,18 +158,19 @@ export default async function RecipePage({
   // 1) Obtain the slug
   const { slug } = await promisedParams;
 
-  // 2) Load the recipe from DB (with subscription check if membersOnly)
-  const recipe = await getRecipe(slug);
+  // 2) Load the recipe + subscription from DB
+  const result = await getRecipe(slug);
 
-  // 3) If no recipe (either does not exist or membership blocked => null)
-  if (!recipe) {
+  if (!result?.recipe) {
     notFound();
   }
 
-  // 4) Increment the view count
+  const { recipe, isUserSubscribed, showFullRecipe } = result;
+
+  // 3) Increment the view count
   await incrementRecipeView(recipe.id);
 
-  // 5) Derive fallback text for times & difficulty
+  // 4) Derive fallback text for times & difficulty
   const finalPrepTime = recipe.prepTime || 0;
   const finalCookTime = recipe.cookTime || 0;
   const finalTotalTime = recipe.totalTime || 0;
@@ -194,22 +178,19 @@ export default async function RecipePage({
   const finalServings = recipe.servings || 1;
   const finalServingType: ServingType = recipe.servingType ?? "PEOPLE";
 
-  // Build display text for your recipe meta
   const prepTimeText = finalPrepTime > 0 ? `${finalPrepTime} min` : "N/A";
   const cookTimeText = finalCookTime > 0 ? `${finalCookTime} min` : "N/A";
   const totalTimeText = finalTotalTime > 0 ? `${finalTotalTime} min` : "N/A";
 
-  // Decide which image is primary
   const primaryImage =
     recipe.images.find((img) => img.isPrimary) || recipe.images[0];
 
-  // Build final display tags from real DB tags
   const finalDisplayTags = recipe.tags.map((tag) => ({
     name: tag.name,
     slug: tag.slug,
   }));
 
-  // JSON-LD structured data
+  // Build structured data for SEO
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Recipe",
@@ -220,7 +201,7 @@ export default async function RecipePage({
       "@type": "Person",
       name: recipe.user?.name || "Anonymous",
     },
-    datePublished: recipe.createdAt?.toISOString(),
+    datePublished: recipe.publishedAt?.toISOString(),
     prepTime: finalPrepTime ? `PT${finalPrepTime}M` : undefined,
     cookTime: finalCookTime ? `PT${finalCookTime}M` : undefined,
     totalTime: finalTotalTime ? `PT${finalTotalTime}M` : undefined,
@@ -249,9 +230,9 @@ export default async function RecipePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+
       <article className="container mx-auto px-4 py-8 max-w-4xl">
         <header className="mb-8">
-          {/* Main image */}
           {primaryImage && (
             <div className="relative aspect-video rounded-lg overflow-hidden mb-6">
               <Image
@@ -268,7 +249,6 @@ export default async function RecipePage({
             </div>
           )}
 
-          {/* Category + Difficulty */}
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-2">
               {recipe.category && (
@@ -291,7 +271,6 @@ export default async function RecipePage({
               </Badge>
             </div>
 
-            {/* Title & Description */}
             <h1 className="text-4xl font-bold">{recipe.title}</h1>
             {recipe.description && (
               <div
@@ -300,9 +279,7 @@ export default async function RecipePage({
               />
             )}
 
-            {/* Author & Buttons */}
             <div className="flex items-center justify-between flex-wrap gap-4">
-              {/* Author info */}
               <div className="flex items-center gap-2">
                 {recipe.user?.image && (
                   <Image
@@ -319,23 +296,25 @@ export default async function RecipePage({
                 </div>
               </div>
 
-              {/* Like / Save / Print */}
               <div className="flex gap-2">
                 <LikeButtonRecipe recipeId={recipe.id} />
+
+                {/* Pass isSubscribed from the server result */}
                 <SaveRecipeButton
                   recipeId={recipe.id}
                   savedRecipeId={recipe.savedBy?.[0]?.id}
                   existingNote={recipe.savedBy?.[0]?.notes}
-                  isSubscribed={false}
+                  isSubscribed={isUserSubscribed} // <== from our getRecipe
                 />
+
                 <PrintButton label="Cetak Resepi" />
               </div>
             </div>
 
-            {/* Date + ViewCount */}
             <div className="flex items-center gap-8 text-base text-gray-600 mt-2 font-medium">
               <span>
-                Diterbitkan pada {formatDate(recipe.createdAt, { time: false })}
+                Diterbitkan pada{" "}
+                {formatDate(recipe.publishedAt, { time: false })}
               </span>
               {typeof recipe.viewCount === "number" && (
                 <span className="flex items-center gap-1">
@@ -347,7 +326,6 @@ export default async function RecipePage({
           </div>
         </header>
 
-        {/* Meta Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <RecipeMetaCards
             prepTime={recipe.prepTime}
@@ -361,7 +339,6 @@ export default async function RecipePage({
           />
         </div>
 
-        {/* Tags from real DB tags only */}
         {finalDisplayTags.length > 0 && (
           <div className="mb-8">
             <div className="flex flex-wrap gap-2">
@@ -383,10 +360,9 @@ export default async function RecipePage({
           </div>
         )}
 
-        {/* Recipe Sections (INGREDIENTS & INSTRUCTIONS) */}
         <RecipeSections
-          sections={recipe.sections.filter(section => 
-            recipe.showFullRecipe || section.type === "INGREDIENTS"
+          sections={recipe.sections.filter(
+            (section) => showFullRecipe || section.type === "INGREDIENTS"
           )}
           labels={{
             ingredients: "Bahan-bahan",
@@ -394,13 +370,14 @@ export default async function RecipePage({
           }}
         />
 
-        {!recipe.showFullRecipe && (
+        {!showFullRecipe && (
           <div className="mt-8 p-4 bg-orange-50 rounded-lg text-center">
             <p className="text-orange-800 font-medium">
-              Untuk melihat cara memasak penuh dan tips, sila langgani atau tunggu seminggu dari tarikh penerbitan.
+              Untuk melihat cara memasak penuh dan tips, sila langgani atau
+              tunggu seminggu dari tarikh penerbitan.
             </p>
-            <Link 
-              href="/langganan" 
+            <Link
+              href="/langganan"
               className="mt-2 inline-block px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
             >
               Langgani Sekarang
@@ -408,21 +385,18 @@ export default async function RecipePage({
           </div>
         )}
 
-        {/* Tips */}
-        {recipe.tips?.length && recipe.showFullRecipe ? (
+        {recipe.tips?.length && showFullRecipe ? (
           <section className="mt-8">
             <RecipeTips tips={recipe.tips} />
           </section>
         ) : null}
 
-        {/* Author */}
         <section className="mt-8">
           <Suspense fallback={<div>Loading author info...</div>}>
             <AuthorSpotlight user={recipe.user} />
           </Suspense>
         </section>
 
-        {/* Comments */}
         <section className="mt-12">
           <Suspense fallback={<div>Loading comments...</div>}>
             <CommentsWrapper

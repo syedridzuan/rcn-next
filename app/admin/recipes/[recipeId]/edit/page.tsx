@@ -44,6 +44,7 @@ export default async function EditRecipePage({
     description: recipe.description ?? "",
     shortDescription: recipe.shortDescription ?? "",
     language: recipe.language ?? "en",
+    status: recipe.status,
     cookTime: recipe.cookTime,
     prepTime: recipe.prepTime,
     servings: recipe.servings,

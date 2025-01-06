@@ -1,26 +1,28 @@
-// app/(main)/page.tsx
+// File: app/(main)/page.tsx
 
 import { prisma } from "@/lib/db";
-import { Button } from "@/components/ui/button";
 import NewsletterForm from "@/components/NewsletterForm";
 
-// Imported sections
-import HeroSection from "./home/HeroSection"; // <-- newly added
+import HeroSection from "./home/HeroSection";
 import EditorsPickSection from "./home/EditorsPickSection";
 import LatestRecipesSection from "./home/LatestRecipesSection";
 import PopularCategoriesSection from "./home/PopularCategoriesSection";
 import LatestGuidesSection from "./home/LatestGuidesSection";
 
-/* -----------------------------
-   1. Data Fetching Functions
------------------------------- */
-
-// 1. Editor's Pick Recipes
+/**
+ * Fetch up to 5 Editor's Pick recipes with status = PUBLISHED,
+ * ordered by publishedAt DESC.
+ */
 async function getEditorsPickRecipes() {
   return prisma.recipe.findMany({
-    where: { isEditorsPick: true },
+    where: {
+      status: "PUBLISHED",
+      isEditorsPick: true,
+    },
+    orderBy: {
+      publishedAt: "desc",
+    },
     take: 5,
-    orderBy: { createdAt: "desc" },
     include: {
       images: {
         where: { isPrimary: true },
@@ -30,11 +32,15 @@ async function getEditorsPickRecipes() {
   });
 }
 
-// 2. Latest Recipes
+/**
+ * Fetch up to 12 of the latest published recipes,
+ * ordered by publishedAt DESC.
+ */
 async function getLatestRecipes() {
   return prisma.recipe.findMany({
+    where: { status: "PUBLISHED" },
+    orderBy: { publishedAt: "desc" },
     take: 12,
-    orderBy: { createdAt: "desc" },
     include: {
       images: {
         where: { isPrimary: true },
@@ -44,9 +50,11 @@ async function getLatestRecipes() {
   });
 }
 
-// 3. Popular Categories
+/**
+ * Popular categories, unchanged (although you might
+ * want to filter out categories that have zero published recipes).
+ */
 async function getPopularCategories() {
-  // Example: sort by recipesCount descending
   return prisma.category.findMany({
     orderBy: { recipesCount: "desc" },
     take: 6,
@@ -60,7 +68,9 @@ async function getPopularCategories() {
   });
 }
 
-// 4. Latest Guides
+/**
+ * Latest Guides, unchanged.
+ */
 async function getLatestGuides() {
   return prisma.guide.findMany({
     orderBy: { createdAt: "desc" },
@@ -74,12 +84,12 @@ async function getLatestGuides() {
   });
 }
 
-/* -----------------------------------
-   2. The Home Page Server Component
------------------------------------- */
-
+/**
+ * The main Home Page component.
+ * Loads data concurrently and passes them to sub-sections.
+ */
 export default async function HomePage() {
-  // Fetch all data in parallel
+  // 1) Load published recipes & other data in parallel
   const [editorsPickRecipes, latestRecipes, popularCategories, latestGuides] =
     await Promise.all([
       getEditorsPickRecipes(),
@@ -90,16 +100,12 @@ export default async function HomePage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* ===== Hero Section (Imported) ===== */}
       <HeroSection />
 
-      {/* ===== Editor's Picks ===== */}
       <EditorsPickSection recipes={editorsPickRecipes} />
 
-      {/* ===== Latest Recipes ===== */}
       <LatestRecipesSection recipes={latestRecipes} title="Resepi Terkini" />
 
-      {/* ===== Newsletter Section ===== */}
       <section className="bg-orange-100 rounded-lg p-8 my-16">
         <h2 className="text-3xl font-bold mb-4 text-center">
           Langgan Surat Berita Kami
@@ -112,10 +118,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ===== Popular Categories ===== */}
       <PopularCategoriesSection categories={popularCategories} />
-
-      {/* ===== Latest Guides ===== */}
       <LatestGuidesSection guides={latestGuides} />
     </div>
   );

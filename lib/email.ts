@@ -231,3 +231,31 @@ export async function sendCancelScheduledEmail(email: string) {
     html,
   });
 }
+
+export async function sendVerificationEmail(
+  username: string,
+  userEmail: string,
+  verificationUrl: string
+) {
+  console.log("Calling sendVerificationEmail for:", userEmail);
+
+  const subject = "Sahkan Akaun Anda";
+  // The HTML body is now in Malay
+  const html = `
+    <h1>Sahkan Akaun Anda</h1>
+    <p>Terima kasih kerana mendaftar, <strong>${username}</strong>! 
+       Sila klik pautan di bawah untuk mengesahkan akaun anda:</p>
+    <p>
+      <a href="${verificationUrl}" target="_blank" rel="noopener noreferrer">
+        Sahkan Akaun
+      </a>
+    </p>
+    <p>Pautan ini akan tamat dalam 24 jam.</p>
+  `;
+
+  await sendEmail({
+    to: userEmail,
+    subject,
+    html,
+  });
+}

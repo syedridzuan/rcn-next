@@ -5,17 +5,26 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 import CategoryFilters from "./components/CategoryFilters";
+import { formatDate } from "@/lib/utils"; // We'll use this for publishedAt
+// If you don't have a formatDate function, just replace with your own date logic.
 
 interface PageProps {
-  params: { slug: string };
-  searchParams: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{
     page?: string;
     difficulty?: string;
     sort?: string;
-  };
+  }>;
 }
 
 const ITEMS_PER_PAGE = 12;
+
+const difficultyTranslations: Record<string, string> = {
+  EASY: "Mudah",
+  MEDIUM: "Sederhana",
+  HARD: "Sukar",
+  EXPERT: "Pakar",
+};
 
 function toTitleCase(str: string) {
   return str.replace(
@@ -24,33 +33,41 @@ function toTitleCase(str: string) {
   );
 }
 
-export async function generateMetadata(props: PageProps): Promise<Metadata> {
+export async function generateMetadata(_: PageProps): Promise<Metadata> {
+  // You can dynamically build metadata if needed.
   return {};
 }
 
+/**
+ * This page shows only recipes with `status = "PUBLISHED"`,
+ * by default ordered by `publishedAt DESC`,
+ * but user can switch to sort by `cookTime` or `prepTime`.
+ * Also includes optional fields for a richer UI.
+ */
 export default async function CategoryPage({
-  params,
-  searchParams,
+  params: promisedParams,
+  searchParams: promisedSearchParams,
 }: PageProps) {
-  const hasActiveSubscription = false;
+  // 1) Await the route params & searchParams (Next.js 15 quirk)
+  const { slug } = await promisedParams;
+  const { page = "1", difficulty, sort } = await promisedSearchParams;
 
-  // 2. Determine pagination & filters
-  const page = parseInt(searchParams.page || "1", 10);
-  const skip = (page - 1) * ITEMS_PER_PAGE;
+  // 2) Convert page to number for pagination
+  const pageNum = parseInt(page, 10) || 1;
+  const skip = (pageNum - 1) * ITEMS_PER_PAGE;
 
-  const difficultyFilter = searchParams.difficulty?.toUpperCase();
-  const sortParam = searchParams.sort;
+  // 3) Build difficulty filter
+  const difficultyFilter = difficulty?.toUpperCase();
+  // 4) Build orderBy logic
+  let orderBy: any = { publishedAt: "desc" };
+  if (sort === "cookTime") orderBy = { cookTime: "asc" };
+  if (sort === "prepTime") orderBy = { prepTime: "asc" };
 
-  // 3. Build orderBy logic
-  let orderBy: any = { createdAt: "desc" };
-  if (sortParam === "cookTime") orderBy = { cookTime: "asc" };
-  if (sortParam === "prepTime") orderBy = { prepTime: "asc" };
-
-  // 4. Build whereClause logic for difficulty and published status
+  // 5) Only published
   const whereClause: any = {
-    status: "PUBLISHED", // Only show published recipes
+    status: "PUBLISHED",
   };
-
+  // If user selected a valid difficulty
   if (
     difficultyFilter &&
     ["EASY", "MEDIUM", "HARD", "EXPERT"].includes(difficultyFilter)
@@ -58,9 +75,9 @@ export default async function CategoryPage({
     whereClause.difficulty = difficultyFilter;
   }
 
-  // 5. Fetch the category and its recipes
+  // 6) Fetch the category + associated PUBLISHED recipes
   const category = await prisma.category.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     include: {
       recipes: {
         where: whereClause,
@@ -80,11 +97,12 @@ export default async function CategoryPage({
     notFound();
   }
 
-  // 7. Calculate total pages
+  // 7) If your Category model tracks only published recipesCount, we can use that:
   const totalRecipes = category.recipesCount || category.recipes.length;
   const totalPages = Math.ceil(totalRecipes / ITEMS_PER_PAGE);
 
-  if (page < 1 || (totalPages > 0 && page > totalPages)) {
+  // 8) If the requested page is out of range, show 404
+  if (pageNum < 1 || (totalPages > 0 && pageNum > totalPages)) {
     notFound();
   }
 
@@ -94,11 +112,7 @@ export default async function CategoryPage({
         Kategori: {toTitleCase(category.name)}
       </h1>
 
-      <CategoryFilters
-        difficulty={difficultyFilter}
-        sort={sortParam}
-        slug={params.slug}
-      />
+      <CategoryFilters difficulty={difficultyFilter} sort={sort} slug={slug} />
 
       {category.recipes.length === 0 ? (
         <p className="text-gray-500">Maaf, tiada resipi buat masa ini.</p>
@@ -110,16 +124,17 @@ export default async function CategoryPage({
 
             return (
               <Link key={recipe.id} href={`/resepi/${recipe.slug}`}>
-                <div className="group border rounded-lg overflow-hidden hover:shadow-lg transition-shadow relative">
-                  {/* Members Only Badge */}
+                <div className="group border rounded-lg overflow-hidden hover:shadow-lg transition-shadow relative p-0">
+                  {/* 7) “Members Only” Marker */}
                   {recipe.membersOnly && (
-                    <div className="absolute top-2 right-2 bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold z-10">
+                    <span className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 text-xs font-bold rounded">
                       Premium
-                    </div>
+                    </span>
                   )}
 
+                  {/* If an image is found, display it */}
                   {primaryImage && (
-                    <div className="w-full h-48 relative">
+                    <div className="w-full h-44 relative">
                       <Image
                         src={primaryImage.url}
                         alt={primaryImage.alt || recipe.title}
@@ -128,11 +143,75 @@ export default async function CategoryPage({
                       />
                     </div>
                   )}
+
+                  {/* Content below the image */}
                   <div className="p-4">
-                    <h2 className="text-lg font-semibold mb-2 group-hover:text-orange-600 transition-colors">
+                    <h2 className="text-lg font-semibold mb-1 group-hover:text-orange-600 transition-colors">
                       {recipe.title}
                     </h2>
-                    <p className="text-sm text-gray-600 line-clamp-2">
+
+                    {/* 1) Published Date */}
+                    {recipe.publishedAt && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Diterbitkan pada{" "}
+                        {formatDate(recipe.publishedAt, { time: false })}
+                      </p>
+                    )}
+
+                    {/* 2) Difficulty Badge */}
+                    <div className="mt-1">
+                      <span className="inline-block text-xs font-semibold px-2 py-1 bg-orange-100 text-orange-600 rounded">
+                        {difficultyTranslations[recipe.difficulty] ||
+                          recipe.difficulty}
+                      </span>
+                    </div>
+
+                    {/* 3) Cook/Prep Time */}
+                    <p className="text-sm text-gray-500 mt-1">
+                      {recipe.prepTime} min penyediaan • {recipe.cookTime} min
+                      memasak
+                    </p>
+
+                    {/* 4) Author Name / Image */}
+                    {recipe.user && (
+                      <div className="flex items-center gap-2 mt-2">
+                        {recipe.user.image && (
+                          <Image
+                            src={recipe.user.image}
+                            alt={recipe.user.name ?? ""}
+                            width={24}
+                            height={24}
+                            className="rounded-full object-cover"
+                          />
+                        )}
+                        <p className="text-xs text-gray-500">
+                          Oleh {recipe.user.name}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* 5) View Count or Like Count */}
+                    <p className="text-xs text-gray-500 mt-1">
+                      {recipe.viewCount ?? 0} paparan • {recipe.likeCount ?? 0}{" "}
+                      suka
+                    </p>
+
+                    {/* 6) Tags */}
+                    {recipe.tags?.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {recipe.tags.map((tag) => (
+                          <span
+                            key={tag.id}
+                            className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-700"
+                          >
+                            {tag.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* shortDescription (brief excerpt) */}
+                    <p className="text-sm text-gray-600 line-clamp-2 mt-2">
                       {recipe.shortDescription || "Tiada ringkasan resipi."}
                     </p>
                   </div>
@@ -143,26 +222,30 @@ export default async function CategoryPage({
         </div>
       )}
 
-      {/* Pagination */}
+      {/* Simple Pagination */}
       <div className="mt-6 flex justify-center items-center gap-4">
-        {page > 1 && (
+        {/* Previous Page */}
+        {pageNum > 1 && (
           <Link
-            href={`/kategori/${params.slug}?page=${page - 1}${
+            href={`/kategori/${slug}?page=${pageNum - 1}${
               difficultyFilter ? `&difficulty=${difficultyFilter}` : ""
-            }${sortParam ? `&sort=${sortParam}` : ""}`}
+            }${sort ? `&sort=${sort}` : ""}`}
             className="px-3 py-1 border rounded hover:bg-gray-50"
           >
             Sebelum
           </Link>
         )}
+
         <span className="text-gray-700">
-          Halaman {page} / {totalPages || 1}
+          Halaman {pageNum} / {totalPages || 1}
         </span>
-        {page < totalPages && (
+
+        {/* Next Page */}
+        {pageNum < totalPages && (
           <Link
-            href={`/kategori/${params.slug}?page=${page + 1}${
+            href={`/kategori/${slug}?page=${pageNum + 1}${
               difficultyFilter ? `&difficulty=${difficultyFilter}` : ""
-            }${sortParam ? `&sort=${sortParam}` : ""}`}
+            }${sort ? `&sort=${sort}` : ""}`}
             className="px-3 py-1 border rounded hover:bg-gray-50"
           >
             Seterusnya

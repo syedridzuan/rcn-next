@@ -59,12 +59,13 @@ interface Recipe {
   status: string; // e.g., 'PUBLISHED'
   createdAt: string | Date;
   updatedAt: string | Date;
+  publishedAt?: string | Date;
   isEditorsPick: boolean;
   images?: RecipeImage[];
 }
 
 /** Sorting keys available: "createdAt" or "updatedAt" */
-type SortKey = "createdAt" | "updatedAt" | "";
+type SortKey = "createdAt" | "updatedAt" | "publishedAt" | "";
 
 interface RecipeListProps {
   recipes: Recipe[];
@@ -222,6 +223,7 @@ export default function RecipeList({ recipes }: RecipeListProps) {
           <option value="">No Sort</option>
           <option value="createdAt">Created At</option>
           <option value="updatedAt">Updated At</option>
+          <option value="publishedAt">Published At</option>
         </select>
 
         {/* Sort Order */}
@@ -249,6 +251,7 @@ export default function RecipeList({ recipes }: RecipeListProps) {
               <th className="p-3 font-medium">Status</th>
               <th className="p-3 font-medium">Created At</th>
               <th className="p-3 font-medium">Updated At</th>
+              <th className="p-3 font-medium">Published At</th>
               <th className="p-3 font-medium">Editor’s Pick</th>
               <th className="p-3 font-medium text-right">Actions</th>
             </tr>
@@ -320,6 +323,7 @@ function RecipeRow({ recipe }: { recipe: Recipe }) {
   const categoryName = recipe.category?.name || "—";
   const createdAtString = safeFormatDate(recipe.createdAt);
   const updatedAtString = safeFormatDate(recipe.updatedAt);
+  const publishedAtString = safeFormatDate(recipe.publishedAt);
 
   return (
     <tr className="border-b last:border-0 hover:bg-gray-50">
@@ -338,6 +342,7 @@ function RecipeRow({ recipe }: { recipe: Recipe }) {
       <td className="p-3">{recipe.status}</td>
       <td className="p-3">{createdAtString}</td>
       <td className="p-3">{updatedAtString}</td>
+      <td className="p-3">{publishedAtString}</td>
       <td className="p-3">
         {recipe.isEditorsPick ? (
           <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700">

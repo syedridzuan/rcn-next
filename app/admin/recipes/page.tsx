@@ -15,6 +15,7 @@ export default async function RecipesPage() {
       status: true,
       createdAt: true,
       updatedAt: true,
+      publishedAt: true,
       isEditorsPick: true,
       images: true,
       category: { select: { name: true } },
