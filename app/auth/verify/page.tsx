@@ -5,70 +5,72 @@ interface VerifyPageProps {
 }
 
 export default async function VerifyPage({ searchParams }: VerifyPageProps) {
+  // 1) Handle the 'token' from the query params
   const token = Array.isArray(searchParams?.token)
     ? searchParams.token[0]
     : searchParams?.token;
 
+  // 2) If no token found
   if (!token) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full bg-white shadow p-6 rounded-md">
-          <h1 className="text-2xl font-bold mb-4">Verification Error</h1>
-          <p className="mb-6 text-gray-700">No verification token found.</p>
+          <h1 className="text-2xl font-bold mb-4">Ralat Pengesahan</h1>
+          <p className="mb-6 text-gray-700">Tiada token pengesahan dijumpai.</p>
           <a href="/" className="text-blue-600 underline">
-            Go back to homepage
+            Kembali ke laman utama
           </a>
         </div>
       </div>
     );
   }
 
-  // Find the verification token record
+  // 3) Find the verification token record in DB
   const verificationToken = await prisma.verificationToken.findUnique({
     where: { token },
   });
 
   if (!verificationToken || verificationToken.expires < new Date()) {
-    // Token not found or expired
+    // 4) Token not found or expired
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full bg-white shadow p-6 rounded-md">
-          <h1 className="text-2xl font-bold mb-4">Verification Failed</h1>
+          <h1 className="text-2xl font-bold mb-4">Pengesahan Gagal</h1>
           <p className="mb-6 text-gray-700">
-            Invalid or expired verification token.
+            Token pengesahan tidak sah atau telah tamat tempoh.
           </p>
           <a href="/" className="text-blue-600 underline">
-            Go back to homepage
+            Kembali ke laman utama
           </a>
         </div>
       </div>
     );
   }
 
-  // Identifier is usually the user's email
+  // 5) Get user by email from verification token
   const userEmail = verificationToken.identifier;
   const user = await prisma.user.findUnique({
     where: { email: userEmail },
   });
 
   if (!user) {
-    // No user found for the given identifier
+    // No user associated with this token
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full bg-white shadow p-6 rounded-md">
-          <h1 className="text-2xl font-bold mb-4">Verification Failed</h1>
+          <h1 className="text-2xl font-bold mb-4">Pengesahan Gagal</h1>
           <p className="mb-6 text-gray-700">
-            No user associated with this token.
+            Tiada pengguna yang dikaitkan dengan token ini.
           </p>
           <a href="/" className="text-blue-600 underline">
-            Go back to homepage
+            Kembali ke laman utama
           </a>
         </div>
       </div>
     );
   }
 
-  // If user is not verified, verify them now
+  // 6) If user’s email not verified yet, verify it now
   if (!user.emailVerified) {
     await prisma.user.update({
       where: { email: userEmail },
@@ -78,21 +80,19 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
     });
   }
 
-  // Delete the verification token to prevent reuse
+  // 7) Delete the token to prevent reuse
   await prisma.verificationToken.delete({
     where: { token },
   });
 
-  // Success page
+  // 8) Success page
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full bg-white shadow p-6 rounded-md">
-        <h1 className="text-2xl font-bold mb-4">Email Verified</h1>
-        <p className="mb-6 text-gray-700">
-          Your email has been successfully verified!
-        </p>
+        <h1 className="text-2xl font-bold mb-4">Emel Disahkan</h1>
+        <p className="mb-6 text-gray-700">Emel anda telah berjaya disahkan!</p>
         <a href="/" className="text-blue-600 underline">
-          Go back to homepage
+          Kembali ke laman utama
         </a>
       </div>
     </div>

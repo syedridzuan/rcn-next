@@ -25,7 +25,7 @@ export default function EditorsPickSection({
 }: EditorsPickSectionProps) {
   return (
     <section className="mb-10">
-      <h2 className="text-2xl font-semibold mb-4">Editor’s Picks</h2>
+      <h2 className="text-2xl font-semibold mb-4">Pilihan Editor</h2>
 
       {recipes.length < 1 ? (
         <p className="text-gray-600">

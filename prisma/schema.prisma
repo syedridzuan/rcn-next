@@ -142,17 +142,22 @@ model Category {
 }
 
 model Recipe {
-  id                  String            @id @default(cuid())
-  title               String
-  slug                String            @unique
-  description         String?
-  shortDescription    String?
-  membersOnly         Boolean           @default(false)
-  language            String            @default("en")
-  cookTime            Int?
-  prepTime            Int?
-  totalTime           Int?
-  servings            Int?
+  id               String  @id @default(cuid())
+  title            String
+  slug             String  @unique
+  description      String?
+  shortDescription String?
+  membersOnly      Boolean @default(false)
+  language         String  @default("en")
+  servingsText     String?
+  cookTime         Int?
+  CookTimeText     String?
+  prepTime         Int?
+  PrepTimeText     String?
+  totalTime        Int?
+  TotalTimeText    String?
+  servings         Int?
+
   servingType         ServingType?
   difficulty          RecipeDifficulty  @default(EASY)
   status              RecipeStatus      @default(DRAFT)
@@ -172,6 +177,7 @@ model Recipe {
   reviews             Review[]
   avgRating           Float?
   numReviews          Int               @default(0)
+  ytVideo             String?
   savedBy             SavedRecipe[]
   // ↓↓↓ NEW columns for OpenAI suggestions ↓↓↓
   openaiPrepTime      Int?
