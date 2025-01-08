@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/toaster"; // shadcn Toaster
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Admin admin",
+  title: "Admin Page",
   description: "Manage your application",
 };
 

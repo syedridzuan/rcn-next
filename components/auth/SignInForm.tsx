@@ -38,13 +38,17 @@ export function SignInForm() {
       if (result.error) {
         if (result.error === "email_not_verified") {
           setError("Sila sahkan emel anda sebelum log masuk.");
+        } else if (result.error === "account_suspended") {
+          setError("Akaun anda telah digantung. Sila hubungi sokongan.");
         } else {
           // Pemetaan mesej ralat kepada bahasa pengguna
           const errorMessages: Record<string, string> = {
             invalid_password: "Kata laluan tidak sah.",
             user_not_found: "Tiada akaun ditemui dengan emel tersebut.",
-            no_password_set: "Akaun ini tidak mempunyai kata laluan yang ditetapkan.",
-            missing_credentials: "Sila masukkan kedua-dua emel dan kata laluan.",
+            no_password_set:
+              "Akaun ini tidak mempunyai kata laluan yang ditetapkan.",
+            missing_credentials:
+              "Sila masukkan kedua-dua emel dan kata laluan.",
           };
           setError(
             errorMessages[result.error] || "Berlaku ralat semasa log masuk."

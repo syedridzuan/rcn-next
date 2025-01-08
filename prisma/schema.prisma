@@ -7,6 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Sex {
+  MALE
+  FEMALE
+}
+
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -100,6 +105,10 @@ model User {
   image           String?
   role            Role        @default(USER)
   status          UserStatus?
+  sex             Sex? // references the enum above
+  birthdate       DateTime?
+  suspendedAt     DateTime?
+  suspendedReason String?
   youtubeHandle   String?
   instagramHandle String?
   facebookHandle  String?

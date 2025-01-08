@@ -1,7 +1,8 @@
-// app/admin/subscriptions/[subscriptionId]/page.tsx
+// File: app/admin/subscriptions/[subscriptionId]/page.tsx
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { auth } from "@/auth";
+import SubscriptionActionsClient from "./SubscriptionActionsClient";
 
 export const dynamic = "force-dynamic";
 
@@ -24,10 +25,10 @@ export default async function AdminSubscriptionDetailPage({
     redirect("/?error=NoAccess");
   }
 
-  // 2) Await the params to fix “should be awaited” errors
+  // 2) Await the params
   const { subscriptionId } = await promised;
   if (!subscriptionId) {
-    notFound(); // or throw new Error("Missing subscriptionId");
+    notFound();
   }
 
   // 3) Fetch subscription from DB
@@ -92,34 +93,8 @@ export default async function AdminSubscriptionDetailPage({
           </p>
         )}
 
-        {/* Admin actions: Cancel or Resume */}
-        <div className="mt-4 flex gap-3">
-          {/* Cancel (immediately or at period end) */}
-          <form
-            action={`/admin/api/subscriptions/${subscription.id}/cancel`}
-            method="POST"
-          >
-            <button
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              type="submit"
-            >
-              Cancel Now
-            </button>
-          </form>
-
-          {/* Resume (if subscription was set to cancelAtPeriodEnd, etc.) */}
-          <form
-            action={`/admin/api/subscriptions/${subscription.id}/resume`}
-            method="POST"
-          >
-            <button
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              type="submit"
-            >
-              Resume
-            </button>
-          </form>
-        </div>
+        {/* 4) Render the client component with the necessary props */}
+        <SubscriptionActionsClient subscription={subscription} />
       </div>
     </main>
   );

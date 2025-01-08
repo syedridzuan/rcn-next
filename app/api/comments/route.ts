@@ -21,6 +21,15 @@ export async function POST(req: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    // 2) Re-check DB for user status
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { status: true },
+    });
+    if (dbUser?.status === "SUSPENDED") {
+      return new NextResponse("Forbidden: Account suspended", { status: 403 });
+    }
+
     // 2) Rate-limiting
     const { success, remaining } = await checkRateLimit(session.user.id);
     console.log("[COMMENTS API] Rate limit:", { success, remaining });

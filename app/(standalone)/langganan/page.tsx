@@ -130,7 +130,7 @@ export default function LanggananPage() {
           <h3
             style={{ fontSize: "2rem", fontWeight: "bold", marginTop: "1rem" }}
           >
-            RM 11.99/bulan
+            RM 12.00/bulan
           </h3>
           <ul style={{ marginTop: "1rem", lineHeight: 1.6 }}>
             <li>✔ Bebas iklan</li>

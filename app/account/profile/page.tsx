@@ -1,20 +1,24 @@
-import { redirect } from "next/navigation"
-import { auth } from "@/auth"
-import { prisma } from "@/lib/prisma"
-import { UpdateProfileForm } from "./UpdateProfileForm"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shell } from "@/components/shell"
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
+import { UpdateProfileForm } from "./UpdateProfileForm";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Shell } from "@/components/shell";
 
 export default async function ProfilePage() {
-  // Get the current session using auth()
-  const session = await auth()
-  
-  // Redirect if not authenticated
+  // 1) Check session (server side)
+  const session = await auth();
   if (!session?.user?.email) {
-    redirect('/auth/signin')
+    redirect("/auth/signin");
   }
 
-  // Fetch full user data from database
+  // 2) Fetch user from DB, but skip or omit the role in the final object
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     select: {
@@ -22,7 +26,7 @@ export default async function ProfilePage() {
       name: true,
       email: true,
       image: true,
-      role: true,
+      // role: true, // (we can fetch or skip; not displayed anyway)
       createdAt: true,
       updatedAt: true,
       instagramHandle: true,
@@ -30,27 +34,31 @@ export default async function ProfilePage() {
       tiktokHandle: true,
       youtubeHandle: true,
       blogUrl: true,
+      username: true,
+      sex: true, // "MALE", "FEMALE", or null
+      birthdate: true,
     },
-  })
+  });
 
   if (!user) {
-    throw new Error("User not found")
+    throw new Error("Pengguna tidak ditemui"); // "User not found."
   }
 
   return (
     <Shell>
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>Profile Settings</CardTitle>
+          <CardTitle>Tetapan Profil</CardTitle>
           <CardDescription>
-            Manage your profile information and preferences. Your profile helps us personalize your experience.
+            Urus maklumat dan tetapan profil anda. Profil anda membantu kami
+            memperibadikan pengalaman anda.
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* We pass user to the form, but we don’t show user.role anywhere */}
           <UpdateProfileForm user={user} />
         </CardContent>
       </Card>
     </Shell>
-  )
+  );
 }
-
