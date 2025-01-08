@@ -174,12 +174,12 @@ export default async function CategoryPage({
                     )}
 
                     {/* Difficulty Badge */}
-                    <div className="mt-1">
+                    {/* <div className="mt-1">
                       <span className="inline-block text-xs font-semibold px-2 py-1 bg-orange-100 text-orange-600 rounded">
                         {difficultyTranslations[recipe.difficulty] ||
                           recipe.difficulty}
                       </span>
-                    </div>
+                    </div> */}
 
                     {/* Cook/Prep Time */}
                     <p className="text-sm text-gray-500 mt-1">

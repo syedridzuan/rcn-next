@@ -1,4 +1,4 @@
-// app/(main)/(ads-enabled)/resepi/[slug]/recipe-meta-cards.tsx
+// File: app/(main)/(ads-enabled)/resepi/[slug]/recipe-meta-cards.tsx
 
 import { Clock, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,12 +10,13 @@ interface RecipeMetaCardsProps {
   cookTime: number | null;
   cookTimeText?: string;
   totalTime: number | null;
-  totalTimeText?: string; // ← Possibly containing text like "Overnight + 30 min"
+  totalTimeText?: string; // Possibly containing text like "Overnight + 30 min"
   servings: number | null;
+  servingsText?: string; // <— newly included for fallback
   servingType?: ServingType;
 }
 
-// Simple numeric-to-text converter for minutes → "X jam Y minit"
+// Helper to convert numeric minutes into "X jam Y minit"
 function formatTime(minutes: number): string {
   if (minutes < 60) {
     return `${minutes} minit`;
@@ -36,36 +37,47 @@ export function RecipeMetaCards({
   totalTime,
   totalTimeText,
   servings,
+  servingsText,
   servingType = "PEOPLE",
 }: RecipeMetaCardsProps) {
   // ----- Prep Time -----
   let displayPrep = "N/A";
-  if (prepTimeText && prepTimeText.trim() !== "") {
-    displayPrep = prepTimeText;
-  } else if (prepTime !== null && prepTime > 0) {
+  if (prepTime !== null && prepTime > 0) {
+    // If integer-based prepTime is present & > 0, show formatted
     displayPrep = formatTime(prepTime);
+  } else if (prepTimeText && prepTimeText.trim() !== "") {
+    // Else, fall back to prepTimeText
+    displayPrep = prepTimeText;
   }
 
   // ----- Cook Time -----
   let displayCook = "N/A";
-  if (cookTimeText && cookTimeText.trim() !== "") {
-    displayCook = cookTimeText;
-  } else if (cookTime !== null && cookTime > 0) {
+  if (cookTime !== null && cookTime > 0) {
     displayCook = formatTime(cookTime);
+  } else if (cookTimeText && cookTimeText.trim() !== "") {
+    displayCook = cookTimeText;
   }
 
   // ----- Total Time -----
   let displayTotal = "N/A";
-  if (totalTimeText && totalTimeText.trim() !== "") {
-    displayTotal = totalTimeText;
-  } else if (typeof totalTime === "number" && totalTime > 0) {
+  if (totalTime !== null && totalTime > 0) {
     displayTotal = formatTime(totalTime);
+  } else if (totalTimeText && totalTimeText.trim() !== "") {
+    displayTotal = totalTimeText;
   }
 
   // ----- Servings -----
-  const displayServings = servings && servings > 0 ? servings : "?";
-  let displayServingType = "orang"; // default Malay label
+  let displayServings = "?";
+  if (servings !== null && servings > 0) {
+    // If integer-based servings is present & > 0
+    displayServings = servings.toString();
+  } else if (servingsText && servingsText.trim() !== "") {
+    // Else, fall back to servingsText
+    displayServings = servingsText;
+  }
 
+  // Malay labels for servingType
+  let displayServingType = "orang";
   switch (servingType) {
     case "PIECES":
       displayServingType = "keping";

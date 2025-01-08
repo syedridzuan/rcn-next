@@ -8,6 +8,15 @@ import EditorsPickSection from "./home/EditorsPickSection";
 import LatestRecipesSection from "./home/LatestRecipesSection";
 import PopularCategoriesSection from "./home/PopularCategoriesSection";
 import LatestGuidesSection from "./home/LatestGuidesSection";
+import type { Metadata } from "next";
+
+/**
+ * Add a Malay page title and optional description
+ */
+export const metadata: Metadata = {
+  title: "Resepi Che Nom | Laman rasmi untuk resepi, panduan dan artikel",
+  description: "Koleksi resepi dan panduan masakan terkini daripada Che Nom.",
+};
 
 /**
  * Fetch up to 5 Editor's Pick recipes with status = PUBLISHED,
@@ -51,8 +60,7 @@ async function getLatestRecipes() {
 }
 
 /**
- * Popular categories, unchanged (although you might
- * want to filter out categories that have zero published recipes).
+ * Popular categories, sorted by recipesCount desc.
  */
 async function getPopularCategories() {
   return prisma.category.findMany({
@@ -69,7 +77,7 @@ async function getPopularCategories() {
 }
 
 /**
- * Latest Guides, unchanged.
+ * Latest Guides, fetch 4 newest.
  */
 async function getLatestGuides() {
   return prisma.guide.findMany({

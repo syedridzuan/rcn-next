@@ -83,9 +83,9 @@ export default function LatestRecipesSection({
                   {recipe.shortDescription ?? "Tiada ringkasan disediakan."}
                 </p>
 
-                <div className="mt-2">
+                {/* <div className="mt-2">
                   <Badge variant="outline">{recipe.difficulty}</Badge>
-                </div>
+                </div> */}
               </article>
             );
           })}

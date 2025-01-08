@@ -18,14 +18,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription as DialogDesc,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 
 import { RegisterSchema, type RegisterInput } from "@/lib/validations/auth";
 import { registerAction } from "./actions";
@@ -157,35 +149,16 @@ export function RegisterForm() {
               </FormControl>
               <div className="space-y-1 leading-tight">
                 <FormLabel className="text-sm font-medium">
+                  {/* Link to the T&C page instead of opening a dialog */}
                   Saya bersetuju dengan{" "}
-                  <Dialog>
-                    <DialogTrigger className="text-primary underline">
-                      terma dan syarat
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Terma dan Syarat</DialogTitle>
-                        <DialogDesc className="mt-2 text-sm">
-                          <strong>Adakah anda telah membaca sepenuhnya?</strong>
-                        </DialogDesc>
-                      </DialogHeader>
-                      <div className="mt-4 max-h-[60vh] overflow-y-auto pr-6">
-                        <DialogDesc className="text-sm space-y-4">
-                          {/* Insert your Terms & Conditions text here */}
-                          <p>
-                            1. <strong>Penerimaan Terma:</strong> ...
-                          </p>
-                          <p>
-                            2. <strong>Penggunaan Akaun:</strong> ...
-                          </p>
-                          <p>
-                            3. <strong>Data Peribadi:</strong> ...
-                          </p>
-                          {/* etc. */}
-                        </DialogDesc>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <a
+                    href="/terma-penggunaan"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline"
+                  >
+                    terma dan syarat
+                  </a>
                 </FormLabel>
                 <FormMessage />
               </div>

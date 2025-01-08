@@ -18,7 +18,7 @@ export default function CategoryFilters({
   return (
     <section className="mb-8 flex items-center gap-4 flex-wrap">
       {/* Difficulty Filter */}
-      <div className="flex items-center gap-2">
+      {/* <div className="flex items-center gap-2">
         <span>Kesukaran:</span>
         <select
           value={difficulty || ""}
@@ -42,7 +42,7 @@ export default function CategoryFilters({
           <option value="HARD">Sukar</option>
           <option value="EXPERT">Pakar</option>
         </select>
-      </div>
+      </div> */}
 
       {/* Sort Filter */}
       <div className="flex items-center gap-2">

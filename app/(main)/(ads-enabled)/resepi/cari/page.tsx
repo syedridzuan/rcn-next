@@ -153,7 +153,7 @@ export default async function SearchRecipesPage({
           className="max-w-sm"
         />
 
-        <select
+        {/* <select
           name="difficulty"
           defaultValue={difficultyFilter}
           className="border rounded px-3 py-1.5"
@@ -163,7 +163,7 @@ export default async function SearchRecipesPage({
           <option value="MEDIUM">Sederhana</option>
           <option value="HARD">Sukar</option>
           <option value="EXPERT">Pakar</option>
-        </select>
+        </select> */}
 
         <select
           name="categoryId"

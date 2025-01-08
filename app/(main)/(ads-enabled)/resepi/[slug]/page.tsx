@@ -262,13 +262,13 @@ export default async function RecipePage({
                   <span className="text-gray-400">•</span>
                 </>
               )}
-              <Badge
+              {/* <Badge
                 variant="outline"
                 className="text-sm md:text-base font-semibold px-3 py-1
                            bg-orange-50 text-orange-700 border-orange-200"
               >
                 {difficultyTranslations[finalDifficulty]}
-              </Badge>
+              </Badge> */}
             </div>
 
             <h1 className="text-4xl font-bold">{recipe.title}</h1>
